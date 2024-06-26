@@ -1,0 +1,4 @@
+.idea/**
+django_backend/.env
+db/.env
+venvs

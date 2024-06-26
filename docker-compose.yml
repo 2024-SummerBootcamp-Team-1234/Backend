@@ -6,9 +6,9 @@ services:
     container_name: mysqldb
     env_file:
       - "./db/.env"
-    #mysql 환경 변수와 관련된 file은 현재 위치/db 하위에 .env파일로 따로 둠 #
     ports:
       - "3306:3306"
+
   backend:
     build:
       context: ./django_backend
@@ -21,9 +21,8 @@ services:
     restart: always
     depends_on:
       - mysqldb
-    command:
-      bash -c "python wait_mysql.py && 
-      # wait_mysql.py는 mysql 컨테이너를 띄우고, server를 실행시키기 위해 존재 #
+    command: |
+      bash -c "python wait_mysql.py &&
       python manage.py makemigrations &&
       python manage.py migrate &&
       python manage.py runserver 0.0.0.0:8000"
