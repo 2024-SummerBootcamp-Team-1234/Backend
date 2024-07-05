@@ -10,7 +10,7 @@ def mysql_is_ready():
     logger.addHandler(logging.StreamHandler())
     while time() - start_time < check_timeout:
         try:
-            pymysql.connect(host='mysqldb', port=3306, user='root', password='12345678', db='ClipTab')
+            pymysql.connect(host='mysqldb', port=3306, user='root', password='12345678', db='IamDB')
             print("Connected Successfully.")
             return True
         except:
