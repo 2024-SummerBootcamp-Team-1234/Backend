@@ -1,64 +1,69 @@
 from django.db import models
 
+class SoftDeleteManager(models.Manager):
+
+    def get_queryset(self):
+        return super().get_queryset().filter(is_deleted=False)
+
 class SoftDeletionModel(models.Model):
     is_deleted = models.BooleanField(default=False)
-    deleted_at = models.DateTimeField(null=True, blank=True)
+    objects = models.Manager()
+    undeleted_objects = SoftDeleteManager()
 
     def soft_delete(self):
         self.is_deleted = True
         self.save()
+
+    def restore(self):  # 삭제된 레코드를 복구한다.
+        self.is_deleted = False
+        self.save(update_fields=['is_deleted'])
+
     class Meta:
         abstract = True
 
-class User(models.Model):
+
+class User(SoftDeletionModel):
     email = models.EmailField(verbose_name="email", max_length=255, unique=True)
     name = models.CharField(max_length=255)
     password = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    is_deleted = models.BooleanField(default=False)
 
-    def get_queryset(self):
-        return super().get_queryset().filter(is_deleted=False)
 
-class Post(models.Model):
-    host_id = models.ForeignKey(User, db_constraint=False)
+class Post(SoftDeletionModel):
+    host = models.ForeignKey(User,on_delete=models.SET_NULL, null=True, db_constraint=False)
     title = models.CharField(max_length=255)
     content = models.TextField()
     vote = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    is_deleted = models.BooleanField(default=False)
 
-    def get_queryset(self):
-        return super().get_queryset().filter(is_deleted=False)
 
-class Category(models.Model):
-    id = models.IntegerField(primary_key=True)
+
+class Category(SoftDeletionModel):
+    id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=255)
 
-class LikePost(models.Model):
-    id = models.IntegerField(primary_key=True)
-    post_id = models.ForeignKey(Post, on_delete=models.CASCADE, db_constraint=True)
-    user_id = models.CharField(max_length=255)
-    is_deleted = models.BooleanField(null=True, default=False)
+
+class LikePost(SoftDeletionModel):
+    id = models.AutoField(primary_key=True)
+    post = models.ForeignKey(Post, on_delete=models.SET_NULL, null=True, db_constraint=False)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, db_constraint=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-class Channel(models.Model):
-    id = models.IntegerField(primary_key=True)
-    user_id = models.ForeignKey(User, on_delete=models.CASCADE, db_constraint=True)
-    is_deleted = models.BooleanField(null=True, default=False)
+
+class Channel(SoftDeletionModel):
+    id = models.AutoField(primary_key=True)
+    user= models.ForeignKey(User, on_delete=models.SET_NULL, null=True, db_constraint=False)
     message = models.TextField(null=True, blank=True)
     result = models.TextField(null=True, blank=True)
 
-class Post_Category(models.Model):
-    post_id = models.ForeignKey(Post, db_constraint=False)
-    category_id = models.ForeignKey(Category, db_constraint=False)
-    is_deleted = models.BooleanField(null=True, default=False)
+
+class Post_Category(SoftDeletionModel):
+    post = models.ForeignKey(Post, on_delete=models.SET_NULL, null=True, db_constraint=False)
+    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, db_constraint=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    def get_queryset(self):
-        return super().get_queryset().filter(is_deleted=False)
 

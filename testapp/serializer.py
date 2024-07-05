@@ -23,9 +23,15 @@ class UserSerializer(serializers.ModelSerializer):
 #--------------------------------------------------------------#
 # 게시판 관련
 class PostCreateSerializer(serializers.ModelSerializer):
-    class Mete:
+    class Meta:
         model = Post
-        fields = ['user_id','title','content']
+        fields = ['host','title','content']
+
+
+class PostSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Post
+        fields = ['host','title','content','vote','created_at']
 
 
 

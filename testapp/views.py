@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from .serializer import *
 
 
+
 class SignupView(APIView):
     def post(self, request):
         serializer = UserCreateSerializer(data=request.data)
@@ -54,15 +55,16 @@ class ChannelResultsView(APIView):
         # 여기에 채널 결과를 반환하는 로직을 추가하세요
         return Response({'results': 'Results for channel {}'.format(channel_id)}, status=status.HTTP_200_OK)
 
+#----------------------------------------------------------------------------------------------------------------------------#
 
 class PostCreateView(APIView):
     def post(self, request):
         try:
             data = json.loads(request.body)
-            user_id = data.get('user_id')
-            user = User.objects.get(id=user_id)
+            host_id = data.get('user_id')
+            user = User.objects.get(id=host_id)
             post = Post.objects.create(
-                user_id=user,
+                host_id=user,
                 title=data['title'],
                 content=data['content']
             )
@@ -71,6 +73,35 @@ class PostCreateView(APIView):
             return Response({'error': 'User not found'}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+#----------------------------------------------------------------------------------------------------------------------------#
+# 조회 방법 - 모든 게시판 조회
+
+class AllPostGetView(APIView):
+    def get(self, request):
+        posts = Post.undeleted_objects.all()
+
+        # 필터링된 쿼리셋을 PostSerializer를 사용하여 직렬화합니다.
+        serializer = PostSerializer(posts, many=True)
+
+        # 직렬화된 데이터를 JSON 형태로 응답합니다.
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+# 특정 유저의 게시판 조회
+class UserPostsGetView(APIView):
+    def get(self, request, user_id):
+        try:
+            # get_queryset 메서드를 호출하여 필터링된 쿼리셋을 가져옵니다.
+            user_posts = self.get_queryset(user_id)
+
+            # 필터링된 게시물을 PostSerializer를 사용하여 직렬화합니다.
+            serializer = PostSerializer(user_posts, many=True)
+
+            # 직렬화된 데이터를 JSON 형태로 응답합니다.
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Post.DoesNotExist:
+            return Response({'error': 'User does not have any posts.'}, status=status.HTTP_404_NOT_FOUND)
+#----------------------------------------------------------------------------------------------------------------------------#
+
 
 class PostUpdateView(APIView):
     def put(self, request, post_id):
