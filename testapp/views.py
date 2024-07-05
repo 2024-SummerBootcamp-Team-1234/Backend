@@ -91,7 +91,7 @@ class UserPostsGetView(APIView):
     def get(self, request, user_id):
         try:
             # get_queryset 메서드를 호출하여 필터링된 쿼리셋을 가져옵니다.
-            user_posts = self.get_queryset(user_id)
+            user_posts = Post.undeleted_objects.filter(host=user_id)
 
             # 필터링된 게시물을 PostSerializer를 사용하여 직렬화합니다.
             serializer = PostSerializer(user_posts, many=True)
