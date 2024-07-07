@@ -2,3 +2,4 @@
 django_backend/.env
 db/.env
 venvs
+testapp/migrations/*
