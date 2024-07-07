@@ -7,9 +7,8 @@ from rest_framework.response import Response
 from .serializer import UserCreateSerializer, UserSerializer
 from drf_yasg.utils import swagger_auto_schema
 
-@swagger_auto_schema(method='post', request_body=UserCreateSerializer,
-                     responses={201: UserSerializer}, operation_summary="회원 생성", tags=['회원관리'])
 class SignupView(APIView):
+    @swagger_auto_schema(request_body=UserCreateSerializer, responses={201: UserSerializer})
     def post(self, request):
         serializer = UserCreateSerializer(data=request.data)
         if serializer.is_valid():
