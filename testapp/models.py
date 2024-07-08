@@ -55,7 +55,7 @@ class LikePost(SoftDeletionModel):
 
 class Channel(SoftDeletionModel):
     id = models.AutoField(primary_key=True)
-    user= models.ForeignKey(User, on_delete=models.SET_NULL, null=True, db_constraint=False)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, db_constraint=False)
     message = models.TextField(null=True, blank=True)
     result = models.TextField(null=True, blank=True)
 
