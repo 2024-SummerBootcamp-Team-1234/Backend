@@ -36,3 +36,14 @@ class PostSerializer(serializers.ModelSerializer):
 
 
 #--------------------------------------------------------------#
+
+class ChannelCreateSerializer(serializers.Serializer):
+    user_id = serializers.IntegerField()
+
+    class Meta:
+        fields = ['user_id']
+
+class ChannelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Channel
+        fields = ['id', 'user', 'message', 'result']

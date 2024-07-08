@@ -29,30 +29,37 @@ class SignupView(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
+# 삭제된 카테고리 제외하고 전체 불러오기
 class CategoriesView(APIView):
     @swagger_auto_schema(
         tags=['카테고리 관련'],
     )
     def get(self, request):
-        categories = Category.objects.all().values()
+        categories = Category.undeleted_objects.all().values()
         return Response(list(categories), safe=False, status=status.HTTP_200_OK)
 
+#-----------------------------------------------------------------------------------#
 class ChannelCreateView(APIView):
     @swagger_auto_schema(
         tags=['채널 관련'],
+        request_body=ChannelCreateSerializer,
+        responses={201: ChannelSerializer, 400: 'Bad Request'}
     )
     def post(self, request):
-        try:
-            data = json.loads(request.body)
-            user_id = data.get('user_id')
-            user = User.objects.get(id=user_id)
-            channel = Channel.objects.create(user_id=user)
-            return Response({'channel_id': channel.id}, status=status.HTTP_201_CREATED)
-        except User.DoesNotExist:
-            return Response({'error': 'User not found'}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        serializer = ChannelCreateSerializer(data=request.data)
+
+        if serializer.is_valid():
+            user_id = serializer.validated_data['user_id']
+            try:
+                user = User.objects.get(id=user_id)
+                channel = Channel.objects.create(user=user)
+                channel_serializer = ChannelSerializer(channel)
+                return Response(channel_serializer.data, status=status.HTTP_201_CREATED)
+            except User.DoesNotExist:
+                return Response({'error': 'User not found'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+#-----------------------------------------------------------------------------------#
 
 class SendMessageView(APIView):
     @swagger_auto_schema(
