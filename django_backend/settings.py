@@ -161,7 +161,7 @@ AUTHENTICATION_BACKENDS = (
     'allauth.account.auth_backends.AuthenticationBackend',
 )
 
-SITE_ID = 1
+SITE_ID = 2
 LOGIN_REDIRECT_URL = '/' #로그인 후 호출되는 url 지정
 
 AUTH_USER_MODEL = 'accounts.User'
@@ -203,3 +203,12 @@ BASE_URL = 'http://localhost:8000/'
 
 STATE = ''.join(random.choices(string.ascii_uppercase + string.digits, k=16))
 
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'APP': {
+            'client_id': os.getenv('SOCIAL_AUTH_GOOGLE_CLIENT_ID'),
+            'secret': os.getenv('SOCIAL_AUTH_GOOGLE_SECRET'),
+            'key': ''
+        }
+    }
+}
