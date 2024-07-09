@@ -84,7 +84,9 @@ class SendMessageView(APIView):
 
 class ChannelResultsView(APIView):
     @swagger_auto_schema(
-        tags=['채널 관련'],
+        manual_parameters=[
+            openapi.Parameter('channel_id', openapi.IN_QUERY, description="Channel ID", type=openapi.TYPE_INTEGER)
+        ]
     )
     def get(self, request):
         channel_id = request.GET.get('channel_id')
