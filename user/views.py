@@ -8,6 +8,8 @@ from django.contrib.auth import authenticate
 from django.shortcuts import get_object_or_404
 from django.conf import settings
 from drf_yasg.utils import swagger_auto_schema
+from .utils import get_user_id_from_token, get_user_from_token
+from django.http import JsonResponse
 from .models import User
 from drf_yasg import openapi
 
@@ -146,3 +148,25 @@ class AuthAPIView(APIView):
         response.delete_cookie("access")
         response.delete_cookie("refresh")
         return response
+
+# -----------------------------------------------------------------------------------#
+# 테스트를 위한 view
+class UserIDFromTokenView(APIView):
+    @swagger_auto_schema(
+        tags=['Test']
+    )
+    def get(self, request):
+        user_id = get_user_id_from_token(request)
+        if isinstance(user_id, JsonResponse):  # If the function returned an error response
+            return user_id
+        return Response({"user_id": user_id}, status=status.HTTP_200_OK)
+
+class UserFromTokenView(APIView):
+    @swagger_auto_schema(
+        tags=['Test']
+    )
+    def get(self, request):
+        user_data = get_user_from_token(request)
+        if isinstance(user_data, JsonResponse):  # If the function returned an error response
+            return user_data
+        return Response(user_data, status=status.HTTP_200_OK)
