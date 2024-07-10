@@ -3,6 +3,9 @@ django_backend/.env
 db/.env
 venvs
 testapp/migrations/*
-testapp/__pycache__/
+testapp/__pycache__/*
+user/__pycache__/*
+user/migrations/*
 django_backend/__pycache__/*
+testapp/__pycache__/
 .DS_Store
