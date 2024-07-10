@@ -4,11 +4,13 @@ cryptography==41.0.7
 Django==4.2.8
 django-environ==0.10.0
 djangorestframework==3.14.0
+djangorestframework-simplejwt==5.3.1
 drf-yasg==1.21.6
 inflection==0.5.1
 packaging==23.2
 pycparser==2.21
 PyMySQL==1.1.0
+python-dotenv==1.0.1
 pytz==2023.3.post1
 PyYAML==6.0.1
 sqlparse==0.4.4
