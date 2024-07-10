@@ -90,7 +90,7 @@ class ChannelResultsView(APIView):
     )
     def get(self, request):
         channel_id = request.GET.get('channel_id')
-        try:
+        try:   
             channel = Channel.objects.get(id=channel_id)
             serializer = ChannelSerializer(channel)
             return Response(serializer.data, status=status.HTTP_200_OK)
