@@ -7,3 +7,5 @@ testapp/__pycache__/*
 user/__pycache__/*
 user/migrations/__pycache__/*
 django_backend/__pycache__/*
+testapp/__pycache__/
+.DS_Store
