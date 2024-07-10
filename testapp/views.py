@@ -1,5 +1,4 @@
 from rest_framework.views import APIView
-
 from rest_framework import status
 import json
 from .models import *
@@ -7,6 +6,8 @@ from rest_framework.response import Response
 from .serializer import *
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+from .models import Category
+from .serializer import CategorySerializer
 
 class SignupView(APIView):
     @swagger_auto_schema(
@@ -33,10 +34,12 @@ class SignupView(APIView):
 class CategoriesView(APIView):
     @swagger_auto_schema(
         tags=['카테고리 관련'],
+        responses={200: CategorySerializer(many=True)}
     )
     def get(self, request):
-        categories = Category.undeleted_objects.all().values()
-        return Response(list(categories), safe=False, status=status.HTTP_200_OK)
+        categories = Category.undeleted_objects.all()
+        serializer = CategorySerializer(categories, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 #-----------------------------------------------------------------------------------#
 class ChannelCreateView(APIView):
@@ -56,7 +59,7 @@ class ChannelCreateView(APIView):
                 channel_serializer = ChannelSerializer(channel)
                 return Response(channel_serializer.data, status=status.HTTP_201_CREATED)
             except User.DoesNotExist:
-                return Response({'error': 'User not found'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'error': '사용자를 찾을 수 없습니다.'}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 #-----------------------------------------------------------------------------------#
@@ -64,46 +67,55 @@ class ChannelCreateView(APIView):
 class SendMessageView(APIView):
     @swagger_auto_schema(
         tags=['채널 관련'],
+        request_body=ChannelSerializer,  # Assuming you want to use the same serializer
     )
     def post(self, request, channel_id):
         try:
             data = json.loads(request.body)
             message = data.get('message')
-            # 여기에 메시지 저장 로직을 추가하세요
-            return Response({'message': 'Message sent successfully'}, status=status.HTTP_201_CREATED)
+            channel = Channel.objects.get(id=channel_id)
+            channel.message = message
+            channel.save()
+            return Response({'message': '메시지가 성공적으로 전송되었습니다.'}, status=status.HTTP_201_CREATED)
+        except Channel.DoesNotExist:
+            return Response({'error': '채널을 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 class ChannelResultsView(APIView):
     @swagger_auto_schema(
-        tags=['채널 관련'],
+        manual_parameters=[
+            openapi.Parameter('channel_id', openapi.IN_QUERY, description="Channel ID", type=openapi.TYPE_INTEGER)
+        ]
     )
     def get(self, request):
         channel_id = request.GET.get('channel_id')
-        # 여기에 채널 결과를 반환하는 로직을 추가하세요
-        return Response({'results': 'Results for channel {}'.format(channel_id)}, status=status.HTTP_200_OK)
+        try:   
+            channel = Channel.objects.get(id=channel_id)
+            serializer = ChannelSerializer(channel)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Channel.DoesNotExist:
+            return Response({'error': '채널을 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
 
 #----------------------------------------------------------------------------------------------------------------------------#
 
 class PostCreateView(APIView):
     @swagger_auto_schema(
         tags=['게시판 관련'],
+        request_body=PostCreateSerializer,
+        responses={201: PostSerializer, 400: 'Bad Request'}
     )
     def post(self, request):
-        try:
-            data = json.loads(request.body)
-            host_id = data.get('user_id')
-            user = User.objects.get(id=host_id)
-            post = Post.objects.create(
-                host_id=user,
-                title=data['title'],
-                content=data['content']
-            )
-            return Response({'post_id': post.id}, status=status.HTTP_201_CREATED)
-        except User.DoesNotExist:
-            return Response({'error': 'User not found'}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        serializer = PostCreateSerializer(data=request.data)
+        if serializer.is_valid():
+            try:
+                user = User.objects.get(id=serializer.validated_data['host'].id)
+                post = serializer.save(host=user)
+                post_serializer = PostSerializer(post)
+                return Response(post_serializer.data, status=status.HTTP_201_CREATED)
+            except User.DoesNotExist:
+                return Response({'error': '사용자를 찾을 수 없습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 #----------------------------------------------------------------------------------------------------------------------------#
 # 조회 방법 - 모든 게시판 조회
 
@@ -117,11 +129,7 @@ class AllPostGetView(APIView):
     )
     def get(self, request):
         posts = Post.undeleted_objects.all()
-
-        # 필터링된 쿼리셋을 PostSerializer를 사용하여 직렬화합니다.
         serializer = PostSerializer(posts, many=True)
-
-        # 직렬화된 데이터를 JSON 형태로 응답합니다.
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 # 특정 유저의 게시판 조회
@@ -135,39 +143,41 @@ class UserPostsGetView(APIView):
     )
     def get(self, request, user_id):
         try:
-            # get_queryset 메서드를 호출하여 필터링된 쿼리셋을 가져옵니다.
             user_posts = Post.undeleted_objects.filter(host=user_id)
-
-            # 필터링된 게시물을 PostSerializer를 사용하여 직렬화합니다.
             serializer = PostSerializer(user_posts, many=True)
-
-            # 직렬화된 데이터를 JSON 형태로 응답합니다.
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Post.DoesNotExist:
-            return Response({'error': 'User does not have any posts.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'error': '게시물이 존재하지 않습니다.'}, status=status.HTTP_404_NOT_FOUND)
 #----------------------------------------------------------------------------------------------------------------------------#
 
 
 class PostUpdateView(APIView):
     @swagger_auto_schema(
         tags=['게시판 관련'],
+        request_body=PostSerializer,
     )
     def put(self, request, post_id):
         try:
-            data = json.loads(request.body)
             post = Post.objects.get(id=post_id)
-            post.title = data.get('title', post.title)
-            post.content = data.get('content', post.content)
-            post.save()
-            return Response({'message': 'Post updated successfully'}, status=status.HTTP_200_OK)
+            serializer = PostSerializer(post, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({'message': '게시물이 성공적으로 수정되었습니다.'}, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except Post.DoesNotExist:
-            return Response({'error': 'Post not found'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': '게시물을 찾을 수 없습니다.'}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 class PostVoteView(APIView):
     @swagger_auto_schema(
         tags=['게시판 관련'],
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'input': openapi.Schema(type=openapi.TYPE_INTEGER, description='Vote increment/decrement')
+            }
+        ),
     )
     def put(self, request, post_id):
         try:
@@ -176,9 +186,9 @@ class PostVoteView(APIView):
             input_value = data.get('input', 1)
             post.vote += input_value
             post.save()
-            return Response({'message': 'Post vote updated successfully'}, status=status.HTTP_200_OK)
+            return Response({'message': '게시물 투표가 완료되었습니다.'}, status=status.HTTP_200_OK)
         except Post.DoesNotExist:
-            return Response({'error': 'Post not found'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': '게시물을 찾을 수 없습니다.'}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -191,18 +201,12 @@ class PostDeleteView(APIView):
     )
     def delete(self, request, post_id):
         try:
-            # 게시물 조회
             post = Post.objects.get(pk=post_id)
-
-            # 소프트 삭제 수행
             post.soft_delete()
-
             return Response({"message": "게시물이 성공적으로 삭제되었습니다."})
-
         except Post.DoesNotExist:
             return Response({"error": "삭제할 게시물을 찾을 수 없습니다."},
                             status=status.HTTP_404_NOT_FOUND)
-
         except Exception as e:
             return Response({"error": str(e)},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
