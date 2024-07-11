@@ -24,6 +24,7 @@ class RegisterAPIView(APIView):
         tags=['User'],
         operation_description="Register a new user by providing an ID, name, email, and password."
     )
+    #회원가입
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():

@@ -6,76 +6,55 @@ from rest_framework.response import Response
 from .serializer import *
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-from .models import Category
-from .serializer import CategorySerializer
+from user.utils import *
 
-class SignupView(APIView):
-    @swagger_auto_schema(
-        request_body=UserCreateSerializer,
-        responses={
-            201: UserSerializer,
-            400: 'Bad Request'
-        },
-        tags = ['회원 관련'],
-        operation_description="Create a new user account."
-    )
-    def post(self, request):
-        serializer = UserCreateSerializer(data=request.data)
 
-        if serializer.is_valid():
-            user = serializer.save()  # Save the user instance
-            user_serializer = UserSerializer(user)  # Use UserSerializer to serialize the user instance
-
-            return Response(user_serializer.data, status=status.HTTP_201_CREATED)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-# 삭제된 카테고리 제외하고 전체 불러오기
-class CategoriesView(APIView):
-    @swagger_auto_schema(
-        tags=['카테고리 관련'],
-        responses={200: CategorySerializer(many=True)}
-    )
-    def get(self, request):
-        categories = Category.undeleted_objects.all()
-        serializer = CategorySerializer(categories, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-#-----------------------------------------------------------------------------------#
 class ChannelCreateView(APIView):
     @swagger_auto_schema(
-        tags=['채널 관련'],
-        request_body=ChannelCreateSerializer,
+        tags=['채널'],
         responses={201: ChannelSerializer, 400: 'Bad Request'}
     )
+    # 채널 생성
     def post(self, request):
-        serializer = ChannelCreateSerializer(data=request.data)
+        user_id, error_response = get_user_id_from_token(request)
+        if error_response:
+            return error_response
 
-        if serializer.is_valid():
-            user_id = serializer.validated_data['user_id']
-            try:
-                user = User.objects.get(id=user_id)
-                channel = Channel.objects.create(user=user)
-                channel_serializer = ChannelSerializer(channel)
-                return Response(channel_serializer.data, status=status.HTTP_201_CREATED)
-            except User.DoesNotExist:
-                return Response({'error': '사용자를 찾을 수 없습니다.'}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            user = User.objects.get(id=user_id)
+            channel = Channel.objects.create(user=user)
+            channel_serializer = ChannelCreateSerializer(channel)
+            return Response(channel_serializer.data, status=status.HTTP_201_CREATED)
+        except User.DoesNotExist:
+            return Response({'error': '사용자를 찾을 수 없습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
 
 #-----------------------------------------------------------------------------------#
 
 class SendMessageView(APIView):
     @swagger_auto_schema(
-        tags=['채널 관련'],
+        tags=['채널'],
         request_body=ChannelSerializer,  # Assuming you want to use the same serializer
     )
+    # 메시지 전송
     def post(self, request, channel_id):
         try:
             data = json.loads(request.body)
             message = data.get('message')
+
+            if not channel_id:
+                return Response({'error': 'Channel ID is required'}, status=status.HTTP_400_BAD_REQUEST)
+            if message is None:
+                return Response({'error': 'Message is required'}, status=status.HTTP_400_BAD_REQUEST)
+
             channel = Channel.objects.get(id=channel_id)
             channel.message = message
             channel.save()
+
+            # Response에 RAG를 통한 응답을 포함 + channel.message에 응답 내용 추가
+
             return Response({'message': '메시지가 성공적으로 전송되었습니다.'}, status=status.HTTP_201_CREATED)
         except Channel.DoesNotExist:
             return Response({'error': '채널을 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
@@ -84,15 +63,20 @@ class SendMessageView(APIView):
 
 class ChannelResultsView(APIView):
     @swagger_auto_schema(
+        tags=['채널'],
         manual_parameters=[
             openapi.Parameter('channel_id', openapi.IN_QUERY, description="Channel ID", type=openapi.TYPE_INTEGER)
         ]
     )
+    # 결과 확인
     def get(self, request):
         channel_id = request.GET.get('channel_id')
         try:   
             channel = Channel.objects.get(id=channel_id)
             serializer = ChannelSerializer(channel)
+
+            # Response에 RAG를 통한 결과를 포함 + channel.result에 결과 내용 추가
+
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Channel.DoesNotExist:
             return Response({'error': '채널을 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
@@ -101,17 +85,25 @@ class ChannelResultsView(APIView):
 
 class PostCreateView(APIView):
     @swagger_auto_schema(
-        tags=['게시판 관련'],
+        tags=['게시판'],
         request_body=PostCreateSerializer,
         responses={201: PostSerializer, 400: 'Bad Request'}
     )
+    # 게시글 생성
     def post(self, request):
+        user_id, error_response = get_user_id_from_token(request)
+        if error_response:
+            return error_response
+
         serializer = PostCreateSerializer(data=request.data)
         if serializer.is_valid():
             try:
-                user = User.objects.get(id=serializer.validated_data['host'].id)
+                user = User.objects.get(id=user_id)
                 post = serializer.save(host=user)
                 post_serializer = PostSerializer(post)
+
+                #Response에 RAG를 통한 결과를 바탕으로 content를 작성해서 추가
+
                 return Response(post_serializer.data, status=status.HTTP_201_CREATED)
             except User.DoesNotExist:
                 return Response({'error': '사용자를 찾을 수 없습니다.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -125,7 +117,7 @@ class AllPostGetView(APIView):
             200: PostSerializer,
             400: 'Bad Request'
         },
-        tags=['게시판 관련'],
+        tags=['게시판 목록'],
     )
     def get(self, request):
         posts = Post.undeleted_objects.all()
@@ -139,7 +131,7 @@ class UserPostsGetView(APIView):
             200: PostSerializer,
             405: 'Not found'
         },
-        tags=['게시판 관련'],
+        tags=['게시판 목록'],
     )
     def get(self, request, user_id):
         try:
@@ -153,9 +145,10 @@ class UserPostsGetView(APIView):
 
 class PostUpdateView(APIView):
     @swagger_auto_schema(
-        tags=['게시판 관련'],
+        tags=['게시판'],
         request_body=PostSerializer,
     )
+    #게시글 수정
     def put(self, request, post_id):
         try:
             post = Post.objects.get(id=post_id)
@@ -171,7 +164,7 @@ class PostUpdateView(APIView):
 
 class PostVoteView(APIView):
     @swagger_auto_schema(
-        tags=['게시판 관련'],
+        tags=['게시판'],
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={
@@ -179,6 +172,7 @@ class PostVoteView(APIView):
             }
         ),
     )
+    # 게시글 투표
     def put(self, request, post_id):
         try:
             data = json.loads(request.body)
@@ -197,8 +191,9 @@ class PostVoteView(APIView):
 # 소프트 삭제 구현 방법
 class PostDeleteView(APIView):
     @swagger_auto_schema(
-        tags=['게시판 관련'],
+        tags=['게시판']
     )
+    # 게시글 삭제
     def delete(self, request, post_id):
         try:
             post = Post.objects.get(pk=post_id)

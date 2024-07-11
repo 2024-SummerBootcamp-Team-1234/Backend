@@ -4,52 +4,47 @@ from testapp.models import *
 
 
 #--------------------------------------------------------------#
-# User 관련
-class UserCreateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ['name', 'email','password']
-
-class LoginSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ['email','password']
-
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ['id','name', 'email']
-
-#--------------------------------------------------------------#
 # 게시판 관련
 class PostCreateSerializer(serializers.ModelSerializer):
+    category_ids = serializers.ListField(
+        child=serializers.IntegerField(), allow_null=True, required=False
+    )
+
     class Meta:
         model = Post
-        fields = ['host','title','content']
+        fields = ['title', 'category_ids']
 
+    def create(self, validated_data):
+        category_ids = validated_data.pop('category_ids', None)
+        post = Post.objects.create(**validated_data)
+
+        if category_ids:
+            for category_id in category_ids:
+                if category_id is not None:
+                    Post_Category.objects.create(post=post, category=category_id)
+
+        return post
 
 class PostSerializer(serializers.ModelSerializer):
+    categories = serializers.SerializerMethodField()
+
     class Meta:
         model = Post
-        fields = ['host','title','content','vote','created_at']
+        fields = ['host', 'title', 'content', 'vote', 'created_at', 'categories']
+
+    def get_categories(self, obj):
+        return list(Post_Category.objects.filter(post=obj).values_list('category', flat=True))
 
 
 
 #--------------------------------------------------------------#
 
-class ChannelCreateSerializer(serializers.Serializer):
-    user_id = serializers.IntegerField()
-
+class ChannelCreateSerializer(serializers.ModelSerializer):
     class Meta:
-        fields = ['user_id']
+        model = Channel
+        fields = ['id']
 
 class ChannelSerializer(serializers.ModelSerializer):
     class Meta:
         model = Channel
-        fields = ['id', 'user', 'message', 'result']
-
-
-class CategorySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Category
-        fields = ['id', 'name']
+        fields = ['id', 'message', 'result']
