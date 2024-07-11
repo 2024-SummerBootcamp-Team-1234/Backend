@@ -30,10 +30,25 @@ class PostSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        fields = ['host', 'title', 'content', 'vote', 'created_at', 'categories']
+        fields = ['id', 'host', 'title', 'content', 'vote', 'created_at', 'categories']
 
     def get_categories(self, obj):
         return list(Post_Category.objects.filter(post=obj).values_list('category', flat=True))
+
+class PostUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Post
+        fields = ['title']
+
+# class PostDetailSerializer(serializers.ModelSerializer):
+#     categories = serializers.SerializerMethodField()
+#
+#     class Meta:
+#         model = Post
+#         fields = ['id', 'host', 'title', 'content', 'vote', 'created_at', 'updated_at', 'categories']
+#
+#     def get_categories(self, obj):
+#         return list(Post_Category.objects.filter(post=obj).values_list('category', flat=True))
 
 
 
