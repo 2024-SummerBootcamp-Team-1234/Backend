@@ -1,4 +1,5 @@
 from django.db import models
+from user.models import User
 
 class SoftDeleteManager(models.Manager):
 
@@ -22,27 +23,14 @@ class SoftDeletionModel(models.Model):
         abstract = True
 
 
-class User(SoftDeletionModel):
-    email = models.EmailField(verbose_name="email", max_length=255, unique=True)
-    name = models.CharField(max_length=255)
-    password = models.CharField(max_length=255)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-
 class Post(SoftDeletionModel):
-    host = models.ForeignKey(User,on_delete=models.SET_NULL, null=True, db_constraint=False)
-    title = models.CharField(max_length=255)
-    content = models.TextField()
+    id = models.AutoField(primary_key=True)
+    host = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, db_constraint=False)
+    title = models.CharField(max_length=255, null=False)
+    content = models.TextField(null=False)
     vote = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
-
-
-class Category(SoftDeletionModel):
-    id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=255)
 
 
 class LikePost(SoftDeletionModel):
@@ -61,8 +49,9 @@ class Channel(SoftDeletionModel):
 
 
 class Post_Category(SoftDeletionModel):
+    id = models.AutoField(primary_key=True)
     post = models.ForeignKey(Post, on_delete=models.SET_NULL, null=True, db_constraint=False)
-    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, db_constraint=False)
+    category = models.IntegerField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

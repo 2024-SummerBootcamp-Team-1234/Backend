@@ -4,7 +4,7 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, Permis
 
 # 헬퍼 클래스
 class UserManager(BaseUserManager):
-    def create_user(self, id, password, name, email):
+    def create_user(self, id, password, name):
         if not id:
             raise ValueError('Users must have an ID')
         if not password:
@@ -14,19 +14,17 @@ class UserManager(BaseUserManager):
 
         user = self.model(
             id=id,
-            name=name,
-            email=self.normalize_email(email)
+            name=name
         )
         user.set_password(password)
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, id, password, name, email):
+    def create_superuser(self, id, password, name):
         user = self.create_user(
             id=id,
             password=password,
-            name=name,
-            email=self.normalize_email(email)
+            name=name
         )
         user.is_staff = True
         user.is_superuser = True
@@ -40,7 +38,6 @@ class UserManager(BaseUserManager):
 class User(AbstractBaseUser, PermissionsMixin):
     id = models.CharField(max_length=255, unique=True, null=False, blank=False, primary_key=True)
     name = models.CharField(max_length=255, null=False, blank=False)
-    email = models.EmailField(max_length=255, unique=True, null=True, blank=True)
     password = models.CharField(max_length=255, null=False, blank=False)
     is_deleted = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
@@ -54,7 +51,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     # 사용자의 username field는 id로 설정 (아이디로 로그인)
     USERNAME_FIELD = 'id'
-    REQUIRED_FIELDS = ['name', 'email']
+    REQUIRED_FIELDS = ['name']
 
     def __str__(self):
         return self.id
