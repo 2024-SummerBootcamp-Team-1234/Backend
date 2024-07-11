@@ -123,6 +123,9 @@ class AllPostGetView(APIView):
     )
     def get(self, request):
         posts = Post.undeleted_objects.all()
+        if not posts.exists():
+            return Response({'message': '게시물이 존재하지 않습니다.'}, status=status.HTTP_404_NOT_FOUND)
+
         serializer = PostSerializer(posts, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
