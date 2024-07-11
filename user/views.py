@@ -22,7 +22,7 @@ class RegisterAPIView(APIView):
             400: 'Bad Request'
         },
         tags=['User'],
-        operation_description="Register a new user by providing an ID, name, email, and password."
+        operation_description="Register a new user by providing an ID, name, and password."
     )
     #회원가입
     def post(self, request):
@@ -35,6 +35,7 @@ class RegisterAPIView(APIView):
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+# ----------------------------------------------------------------------------------------------------------------------------#
 
 # class AuthAPIView(APIView):
 #
@@ -82,30 +83,12 @@ class RegisterAPIView(APIView):
 #             # 사용 불가능한 토큰일 때
 #             return Response({"message": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST)
 
+# ----------------------------------------------------------------------------------------------------------------------------#
+
 class AuthLoginView(APIView):
 
     @swagger_auto_schema(
         request_body=LoginSerializer,
-        responses={
-            200: openapi.Response(
-                description="Login successful",
-                examples={
-                    'application/json': {
-                        "user": {
-                            "id": "example_id",
-                            "name": "example_name",
-                            "email": "example_email@example.com"
-                        },
-                        "message": "Login success",
-                        "token": {
-                            "access": "access_token_example",
-                            "refresh": "refresh_token_example"
-                        }
-                    }
-                }
-            ),
-            400: 'Invalid credentials'
-        },
         tags=['User'],
         operation_description="Login user by providing ID and password, returns JWT tokens."
     )
@@ -135,6 +118,8 @@ class AuthLoginView(APIView):
             return res
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+# ----------------------------------------------------------------------------------------------------------------------------#
+
 class AuthLogoutView(APIView):
 
     @swagger_auto_schema(
@@ -154,7 +139,7 @@ class AuthLogoutView(APIView):
         response.delete_cookie("refresh")
         return response
 
-# -----------------------------------------------------------------------------------#
+# ----------------------------------------------------------------------------------------------------------------------------#
 # 테스트를 위한 view
 class UserIDFromTokenView(APIView):
     @swagger_auto_schema(
