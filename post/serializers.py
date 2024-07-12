@@ -1,10 +1,8 @@
 from rest_framework import serializers
 
-from testapp.models import *
+from .models import *
 
 
-#--------------------------------------------------------------#
-# 게시판 관련
 class PostCreateSerializer(serializers.ModelSerializer):
     category_ids = serializers.ListField(
         child=serializers.IntegerField(), allow_null=True, required=False
@@ -25,6 +23,7 @@ class PostCreateSerializer(serializers.ModelSerializer):
 
         return post
 
+
 class PostSerializer(serializers.ModelSerializer):
     categories = serializers.SerializerMethodField()
 
@@ -35,10 +34,12 @@ class PostSerializer(serializers.ModelSerializer):
     def get_categories(self, obj):
         return list(Post_Category.objects.filter(post=obj).values_list('category', flat=True))
 
+
 class PostUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
         fields = ['title']
+
 
 # class PostDetailSerializer(serializers.ModelSerializer):
 #     categories = serializers.SerializerMethodField()
@@ -49,17 +50,3 @@ class PostUpdateSerializer(serializers.ModelSerializer):
 #
 #     def get_categories(self, obj):
 #         return list(Post_Category.objects.filter(post=obj).values_list('category', flat=True))
-
-
-
-#--------------------------------------------------------------#
-
-class ChannelCreateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Channel
-        fields = ['id']
-
-class ChannelSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Channel
-        fields = ['id', 'message', 'result']

@@ -52,6 +52,8 @@ INSTALLED_APPS = [
     'drf_yasg',
     'testapp',
     'user',
+    'channel',
+    'post',
 ]
 
 MIDDLEWARE = [
@@ -182,4 +184,16 @@ SIMPLE_JWT = {
     'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
     'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
+}
+
+
+# swagger authorize 버튼 id, password 입력에서 token 입력으로 변경
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS': {
+        'Bearer': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header'
+        }
+    },
 }
