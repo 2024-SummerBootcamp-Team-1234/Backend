@@ -6,6 +6,10 @@ testapp/migrations/*
 testapp/__pycache__/*
 user/__pycache__/*
 user/migrations/*
+channel/__pycache__/*
+channel/migrations/*
+post/__pycache__/*
+post/migrations/*
 django_backend/__pycache__/*
 testapp/__pycache__/
 .DS_Store

@@ -52,6 +52,8 @@ INSTALLED_APPS = [
     'drf_yasg',
     'testapp',
     'user',
+    'channel',
+    'post',
 ]
 
 MIDDLEWARE = [
