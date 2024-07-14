@@ -1,5 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework import status
+from django.http import HttpResponse, JsonResponse
 import json
 from .models import *
 from rest_framework.response import Response
@@ -7,6 +8,7 @@ from .serializers import *
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from user.utils import *
+from .utils import *
 
 
 class ChannelCreateView(APIView):
@@ -82,3 +84,26 @@ class ChannelResultsView(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Channel.DoesNotExist:
             return Response({'error': '채널을 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+
+# ----------------------------------------------------------------------------------------------------------------------------#
+# tts 테스트 코드
+class TTSView(APIView):
+    @swagger_auto_schema(
+        tags=['Test'],
+        manual_parameters=[
+            openapi.Parameter('text', openapi.IN_QUERY, description="Text to convert to speech", type=openapi.TYPE_STRING, required=True)
+        ]
+    )
+    def get(self, request):
+        text = request.GET.get('text')
+        if not text:
+            return JsonResponse({"error": "Text parameter is required"}, status=400)
+
+        audio_data, error = text_to_speach(text)
+
+        if error is None:
+            response = HttpResponse(audio_data, content_type='audio/mpeg')
+            response['Content-Disposition'] = 'attachment; filename="tts.mp3"'
+            return response
+        else:
+            return JsonResponse({"error": f"Error Code: {error}"}, status=500)
