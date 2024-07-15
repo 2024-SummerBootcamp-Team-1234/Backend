@@ -1,15 +1,15 @@
-from rest_framework.views import APIView
 from rest_framework import status
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse
 import json
-from .models import *
-from rest_framework.response import Response
 from .serializers import *
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from user.utils import *
 from .utils import *
-
+import time
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from django.http import StreamingHttpResponse
 
 class ChannelCreateView(APIView):
     @swagger_auto_schema(
@@ -97,7 +97,7 @@ class TTSView(APIView):
     def get(self, request):
         text = request.GET.get('text')
         if not text:
-            return JsonResponse({"error": "Text parameter is required"}, status=400)
+            return Response({"error": "Text parameter is required"}, status=400)
 
         audio_data, error = text_to_speach(text)
 
@@ -106,4 +106,48 @@ class TTSView(APIView):
             response['Content-Disposition'] = 'attachment; filename="tts.mp3"'
             return response
         else:
-            return JsonResponse({"error": f"Error Code: {error}"}, status=500)
+            return Response({"error": f"Error Code: {error}"}, status=500)
+
+
+
+
+
+# 가상으로 설정한 메시지
+virtual_message = ("Hello, this is a virtual message."
+                   "Hello, this is a virtual message."
+                   "Hello, this is a virtual message."
+                   "Hello, this is a virtual message."
+                   "Hello, this is a virtual message."
+                   "Hello, this is a virtual message."
+                   "Hello, this is a virtual message."
+                   "Hello, this is a virtual message."
+                   "Hello, this is a virtual message."
+                   "Hello, this is a virtual message.")
+
+class SSEAPIView(APIView):
+
+    @swagger_auto_schema(
+        tags=['채널'],
+        manual_parameters=[
+            openapi.Parameter('channel_id', openapi.IN_QUERY, description="Channel ID", type=openapi.TYPE_INTEGER)
+        ],
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'message': openapi.Schema(type=openapi.TYPE_STRING, description='Message to send')
+            },
+            required=['message']
+        )
+    )
+    def post(self, request, channel_id):
+        # 요청 본문에서 message를 받는 형식만 유지
+        message_text = request.data.get('message')
+        if message_text is not None:
+            def event_stream():
+                for char in virtual_message:
+                    yield f"data: {char}\n\n"
+                    time.sleep(0.25)  # 1초 간격으로 문자 전송
+
+            return StreamingHttpResponse(event_stream(), content_type='text/event-stream')
+
+        return Response({"error": "Message not provided"}, status=400)

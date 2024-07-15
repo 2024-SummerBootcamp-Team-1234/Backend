@@ -13,3 +13,6 @@ post/migrations/*
 django_backend/__pycache__/*
 testapp/__pycache__/
 .DS_Store
+judgment/migrations/*
+judgment/__pycache__/*
+judgment/.env

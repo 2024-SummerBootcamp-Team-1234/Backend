@@ -1,8 +1,7 @@
 from datetime import datetime
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 from django.utils.deprecation import MiddlewareMixin
-from django.http import JsonResponse
-
+from rest_framework.response import Response
 
 class RefreshTokenMiddleware(MiddlewareMixin):
     def process_request(self, request):
@@ -23,10 +22,10 @@ class RefreshTokenMiddleware(MiddlewareMixin):
                         request.COOKIES['access'] = str(new_token)
                     except Exception as e:
                         # 리프레시 토큰이 유효하지 않은 경우 에러를 반환합니다.
-                        return JsonResponse({"error": "Invalid refresh token"}, status=401)
+                        return Response({"error": "Invalid refresh token"}, status=401)
                 else:
                     # 리프레시 토큰이 없는 경우 에러를 반환합니다.
-                    return JsonResponse({"error": "Access token expired and no refresh token provided"}, status=401)
+                    return Response({"error": "Access token expired and no refresh token provided"}, status=401)
         elif not access_token and not refresh_token:
             # 토큰이 없는 경우 미들웨어를 무시하고 계속 진행합니다.
             return self.get_response(request)
