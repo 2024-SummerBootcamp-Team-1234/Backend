@@ -21,7 +21,6 @@ services:
     restart: always
     depends_on:
       - mysqldb
-      - chroma
     command: |
       bash -c "python wait_mysql.py &&
       python manage.py makemigrations &&
