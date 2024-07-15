@@ -1,13 +1,13 @@
-from rest_framework.views import APIView
 from rest_framework import status
 import json
-from .models import *
-from rest_framework.response import Response
 from .serializers import *
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from user.utils import *
-
+import time
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from myapp.serializers import MessageSerializer
 
 class ChannelCreateView(APIView):
     @swagger_auto_schema(
@@ -82,3 +82,33 @@ class ChannelResultsView(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Channel.DoesNotExist:
             return Response({'error': '채널을 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+
+
+
+
+# 가상으로 설정한 메시지
+virtual_message = "Hello, this is a virtual message."
+
+class SSEAPIView(APIView):
+    serializer_class = MessageSerializer
+
+    @swagger_auto_schema(
+        tags=['채널'],
+        manual_parameters=[
+            openapi.Parameter('channel_id', openapi.IN_QUERY, description="Channel ID",
+                              type=openapi.TYPE_INTEGER)
+        ],
+    )
+    def post(self, request, channel_id):
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            message_text = serializer.validated_data.get('message')
+
+            def event_stream():
+                for char in message_text:
+                    yield f"data: {char}\n\n"
+                    time.sleep(1)  # 1초 간격으로 문자 전송
+
+            return Response(event_stream(), content_type='text/event-stream')
+
+        return Response(serializer.errors, status=400)

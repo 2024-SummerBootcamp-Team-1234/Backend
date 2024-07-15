@@ -37,6 +37,10 @@ class ChatView(APIView):
         response = StreamingHttpResponse(self.sse_stream(user_input), content_type='text/event-stream')
         return response
 
+# class SummaryView(APIView):
+# OpenAI API 키 설정
+# openai.api_key = os.getenv("OPENAI_API_KEY")
+
 class SummaryView(APIView):
     def get(self, request):
         conversations = Conversation.objects.all()
@@ -44,6 +48,8 @@ class SummaryView(APIView):
         conversation_history = "\n\n".join(conversation_texts)
 
         # 대화 내용을 요약
-        summary = ChatOpenAI(temperature=0.7).run(f"Summarize the following conversation:\n{conversation_history}")
+        summary = (ChatOpenAI(temperature=0.7)
+                   .run(f"Summarize the following conversation:\n{conversation_history}"))
 
         return Response({"summary": summary})
+

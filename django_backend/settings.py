@@ -15,8 +15,6 @@ from dotenv import load_dotenv
 import os
 import environ
 import pymysql
-import chromadb
-from chromadb.config import Settings
 
 
 pymysql.install_as_MySQLdb()
@@ -105,11 +103,6 @@ DATABASES = {
     }
 }
 
-CHROMA_DB = chromadb.Client(Settings(
-    chroma_api_impl="rest",
-    chroma_server_host="chroma",
-    chroma_server_http_port=8000,
-))
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
 
