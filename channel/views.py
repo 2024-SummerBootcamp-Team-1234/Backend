@@ -1,5 +1,5 @@
 from rest_framework import status
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse
 import json
 from .serializers import *
 from drf_yasg.utils import swagger_auto_schema
@@ -97,7 +97,7 @@ class TTSView(APIView):
     def get(self, request):
         text = request.GET.get('text')
         if not text:
-            return JsonResponse({"error": "Text parameter is required"}, status=400)
+            return Response({"error": "Text parameter is required"}, status=400)
 
         audio_data, error = text_to_speach(text)
 
@@ -106,7 +106,7 @@ class TTSView(APIView):
             response['Content-Disposition'] = 'attachment; filename="tts.mp3"'
             return response
         else:
-            return JsonResponse({"error": f"Error Code: {error}"}, status=500)
+            return Response({"error": f"Error Code: {error}"}, status=500)
 
 
 
