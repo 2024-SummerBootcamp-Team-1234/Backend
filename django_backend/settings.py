@@ -51,7 +51,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'drf_yasg',
     'testapp',
-    'judgment'
+    'judgment',
     'user',
     'channel',
     'post',
@@ -132,6 +132,8 @@ USE_I18N = True
 
 USE_TZ = True
 
+# settings.py
+APPEND_SLASH = False
 
 
 # Static files (CSS, JavaScript, Images)

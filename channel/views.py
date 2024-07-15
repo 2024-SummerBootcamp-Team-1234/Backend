@@ -9,7 +9,7 @@ from .utils import *
 import time
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from myapp.serializers import MessageSerializer
+from django.http import StreamingHttpResponse
 
 class ChannelCreateView(APIView):
     @swagger_auto_schema(
@@ -113,28 +113,41 @@ class TTSView(APIView):
 
 
 # 가상으로 설정한 메시지
-virtual_message = "Hello, this is a virtual message."
+virtual_message = ("Hello, this is a virtual message."
+                   "Hello, this is a virtual message."
+                   "Hello, this is a virtual message."
+                   "Hello, this is a virtual message."
+                   "Hello, this is a virtual message."
+                   "Hello, this is a virtual message."
+                   "Hello, this is a virtual message."
+                   "Hello, this is a virtual message."
+                   "Hello, this is a virtual message."
+                   "Hello, this is a virtual message.")
 
 class SSEAPIView(APIView):
-    serializer_class = MessageSerializer
 
     @swagger_auto_schema(
         tags=['채널'],
         manual_parameters=[
-            openapi.Parameter('channel_id', openapi.IN_QUERY, description="Channel ID",
-                              type=openapi.TYPE_INTEGER)
+            openapi.Parameter('channel_id', openapi.IN_QUERY, description="Channel ID", type=openapi.TYPE_INTEGER)
         ],
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'message': openapi.Schema(type=openapi.TYPE_STRING, description='Message to send')
+            },
+            required=['message']
+        )
     )
     def post(self, request, channel_id):
-        serializer = self.serializer_class(data=request.data)
-        if serializer.is_valid():
-            message_text = serializer.validated_data.get('message')
-
+        # 요청 본문에서 message를 받는 형식만 유지
+        message_text = request.data.get('message')
+        if message_text is not None:
             def event_stream():
-                for char in message_text:
+                for char in virtual_message:
                     yield f"data: {char}\n\n"
-                    time.sleep(1)  # 1초 간격으로 문자 전송
+                    time.sleep(0.25)  # 1초 간격으로 문자 전송
 
-            return Response(event_stream(), content_type='text/event-stream')
+            return StreamingHttpResponse(event_stream(), content_type='text/event-stream')
 
-        return Response(serializer.errors, status=400)
+        return Response({"error": "Message not provided"}, status=400)
