@@ -16,3 +16,5 @@ testapp/__pycache__/
 judgment/migrations/*
 judgment/__pycache__/*
 judgment/.env
+elk/.env
+.env
