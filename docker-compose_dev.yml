@@ -12,21 +12,28 @@ services:
       - '--config.file=/etc/prometheus/prometheus.yml'
     restart: always
     networks:
-      - t4y
+      - monitoring-network
 
   grafana:
     image: grafana/grafana
     container_name: grafana
     ports:
-      - 3000:3000
+      - 3001:3000
+    environment:
+      GF_INSTALL_PLUGINS: "grafana-clock-panel,grafana-simple-json-datasource"
+      GF_AUTH_ANONYMOUS_ENABLED: 'true'
+      GF_AUTH_ANONYMOUS_ORG_ROLE: 'Admin'
+      GF_AUTH_DISABLE_LOGIN_FORM: 'true'
     volumes:
       - grafana-data:/var/lib/grafana
-      - ./grafana/provisioning/:/etc/grafana/provisioning/
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
     restart: always
     depends_on:
       - prometheus
+      - node_exporter
     networks:
-      - t4y
+      - monitoring-network
 
   cadvisor:
     image: gcr.io/cadvisor/cadvisor
@@ -41,7 +48,7 @@ services:
       - /var/lib/docker/:/var/lib/docker:ro
       - /dev/disk/:/dev/disk:ro
     networks:
-      - t4y
+      - monitoring-network
 
   node_exporter:
     image: prom/node-exporter
@@ -57,10 +64,22 @@ services:
     ports:
       - "9100:9100"
     networks:
-      - t4y
+      - monitoring-network
+
+  pushgateway:
+    image: prom/pushgateway:v1.2.0
+    container_name: pushgateway
+    restart: unless-stopped
+    ports:
+      - "9091:9091"
+    networks:
+      - monitoring-network
+    labels:
+      org.label-schema.group: "monitoring"
+
 
 networks:
-  t4y:
+  monitoring-network:
     driver: bridge
 
 volumes:
