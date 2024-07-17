@@ -10,7 +10,7 @@ class PostCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        fields = ['title', 'category_ids']
+        fields = ['title', 'content', 'category_ids']
 
     def create(self, validated_data):
         category_ids = validated_data.pop('category_ids', None)

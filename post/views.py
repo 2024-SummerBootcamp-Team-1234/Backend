@@ -27,9 +27,7 @@ class PostCreateView(APIView):
                 post = serializer.save(host=user)
                 post_serializer = PostSerializer(post)
 
-                #Response에 RAG를 통한 결과를 바탕으로 content를 작성해서 추가
-
-                return Response(post_serializer.data, status=status.HTTP_201_CREATED)
+                return Response({'message': '생성되었습니다.'}, status=status.HTTP_201_CREATED)
             except User.DoesNotExist:
                 return Response({'error': '사용자를 찾을 수 없습니다.'}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
