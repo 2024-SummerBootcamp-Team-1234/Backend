@@ -132,8 +132,6 @@ USE_I18N = True
 
 USE_TZ = True
 
-# settings.py
-APPEND_SLASH = False
 
 
 # Static files (CSS, JavaScript, Images)
