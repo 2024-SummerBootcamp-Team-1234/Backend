@@ -151,3 +151,24 @@ class SSEAPIView(APIView):
             return StreamingHttpResponse(event_stream(), content_type='text/event-stream')
 
         return Response({"error": "Message not provided"}, status=400)
+
+class SSEAPIView2(APIView):
+
+    @swagger_auto_schema(
+        tags=['채널'],
+        manual_parameters=[
+            openapi.Parameter('channel_id', openapi.IN_QUERY, description="Channel ID", type=openapi.TYPE_INTEGER)
+        ],
+    )
+    def get(self, request, channel_id):
+        # 요청 본문에서 message를 받는 형식만 유지
+        message_text = request.data.get('message')
+        if message_text is not None:
+            def event_stream():
+                for char in virtual_message:
+                    yield f"data: {char}\n\n"
+                    time.sleep(0.25)  # 1초 간격으로 문자 전송
+
+            return StreamingHttpResponse(event_stream(), content_type='text/event-stream')
+
+        return Response({"error": "Message not provided"}, status=400)
