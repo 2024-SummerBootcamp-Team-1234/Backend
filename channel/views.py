@@ -145,10 +145,13 @@ class SSEAPIView(APIView):
         if message_text is not None:
             def event_stream():
                 for char in virtual_message:
-                    yield f"data: {char}\n\n"
-                    time.sleep(0.25)  # 1초 간격으로 문자 전송
+                    # 각 문자를 JSON 형식으로 감쌈
+                    data = json.dumps({"content": char})
+                    yield f"data: {data}\n\n"
+                    time.sleep(0.25)  # 0.25초 간격으로 문자 전송
 
-            return StreamingHttpResponse(event_stream(), content_type='text/event-stream')
+            # StreamingHttpResponse를 사용하여 스트림 응답 반환
+            return StreamingHttpResponse(event_stream(), content_type="text/event-stream")
 
         return Response({"error": "Message not provided"}, status=400)
 
@@ -166,9 +169,12 @@ class SSEAPIView2(APIView):
         if message_text is not None:
             def event_stream():
                 for char in virtual_message:
-                    yield f"data: {char}\n\n"
-                    time.sleep(0.25)  # 1초 간격으로 문자 전송
+                    # 각 문자를 JSON 형식으로 감쌈
+                    data = json.dumps({"content": char})
+                    yield f"data: {data}\n\n"
+                    time.sleep(0.25)  # 0.25초 간격으로 문자 전송
 
-            return StreamingHttpResponse(event_stream(), content_type='text/event-stream')
+            # StreamingHttpResponse를 사용하여 스트림 응답 반환
+            return StreamingHttpResponse(event_stream(), content_type="text/event-stream")
 
         return Response({"error": "Message not provided"}, status=400)
