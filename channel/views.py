@@ -144,14 +144,34 @@ class SSEAPIView(APIView):
         message_text = request.data.get('message')
         if message_text is not None:
             def event_stream():
+                word = ""
                 for char in virtual_message:
-                    # 각 문자를 JSON 형식으로 감쌈
-                    data = json.dumps({"content": char})
+                    if char.isspace() or char in (".", ",", "!", "?"):  # 단어 구분자
+                        if word:
+                            data = json.dumps({"content": word})
+                            yield f"data: {data}\n\n"
+                            time.sleep(0.25)  # 0.25초 간격으로 단어 전송
+                            word = ""
+                        if char.isspace():
+                            continue
+                        else:
+                            data = json.dumps({"content": char})
+                            yield f"data: {data}\n\n"
+                            time.sleep(0.25)  # 0.25초 간격으로 구두점 전송
+                    else:
+                        word += char
+
+                if word:  # 마지막 단어 처리
+                    data = json.dumps({"content": word})
                     yield f"data: {data}\n\n"
-                    time.sleep(0.25)  # 0.25초 간격으로 문자 전송
 
             # StreamingHttpResponse를 사용하여 스트림 응답 반환
-            return StreamingHttpResponse(event_stream(), content_type="text/event-stream")
+            # return StreamingHttpResponse(event_stream(), content_type="text/event-stream")
+            response = StreamingHttpResponse(event_stream(), content_type="text/event-stream")
+            response['X-Accel-Buffering'] = 'no'  # Disable buffering in nginx
+            response['Cache-Control'] = 'no-cache'  # Ensure clients don't cache the data
+            response['Content-Language'] = request.headers.get('Accept-Language', 'en')
+            return response
 
         return Response({"error": "Message not provided"}, status=400)
 
