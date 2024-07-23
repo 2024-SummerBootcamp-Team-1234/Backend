@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_celery_beat',
     'rest_framework',
     'rest_framework_simplejwt',
     'drf_yasg',
@@ -199,3 +200,20 @@ SWAGGER_SETTINGS = {
         }
     },
 }
+
+CELERY_BROKER_URL = 'amqp://guest:guest@rabbitmq:5672/'
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'Asia/Seoul'
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+# Celery task를 종료 가능하게 해주는 세팅 (굉장히 중요)
+CELERY_TASK_REVOKE = True
+
+CELERYD_HIJACK_ROOT_LOGGER = False
+CELERYD_REDIRECT_STDOUTS = False
+
+CELERY_FLOWER_USER = 'root'  # Flower 웹 인터페이스 사용자 이름
+CELERY_FLOWER_PASSWORD = 'root'  # Flower 웹 인터페이스 비밀번호
+
+CELERY_RESULT_BACKEND = 'rpc://'

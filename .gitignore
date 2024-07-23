@@ -16,3 +16,4 @@ testapp/__pycache__/
 judgment/__pycache__/*
 judgment/.env
 judgment/migrations/*
+celerybeat-schedule

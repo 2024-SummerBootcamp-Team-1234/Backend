@@ -11,6 +11,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.http import StreamingHttpResponse
 
+
 class ChannelCreateView(APIView):
     @swagger_auto_schema(
         tags=['채널'],
@@ -114,14 +115,6 @@ class TTSView(APIView):
 
 # 가상으로 설정한 메시지
 virtual_message = ("Hello, this is a virtual message."
-                   "Hello, this is a virtual message."
-                   "Hello, this is a virtual message."
-                   "Hello, this is a virtual message."
-                   "Hello, this is a virtual message."
-                   "Hello, this is a virtual message."
-                   "Hello, this is a virtual message."
-                   "Hello, this is a virtual message."
-                   "Hello, this is a virtual message."
                    "Hello, this is a virtual message.")
 
 class SSEAPIView(APIView):
