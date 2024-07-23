@@ -4,13 +4,19 @@ import json
 from .serializers import *
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+import openai as openai
 from user.utils import *
 from .utils import *
 import time
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.http import StreamingHttpResponse
+from dotenv import load_dotenv
 
+load_dotenv()
+
+# Set OpenAI API key from environment variable
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 class ChannelCreateView(APIView):
     @swagger_auto_schema(
@@ -191,3 +197,56 @@ class SSEAPIView2(APIView):
             return StreamingHttpResponse(event_stream(), content_type="text/event-stream")
 
         return Response({"error": "Message not provided"}, status=400)
+
+
+class SSEAPIView3(APIView):
+
+    @swagger_auto_schema(
+        tags=['채널'],
+        manual_parameters=[
+            openapi.Parameter('channel_id', openapi.IN_QUERY, description="Channel ID", type=openapi.TYPE_INTEGER)
+        ],
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'message': openapi.Schema(type=openapi.TYPE_STRING, description='Message to send')
+            },
+            required=['message']
+        )
+    )
+    def post(self, request, channel_id):
+        message = request.data.get('message', '')
+
+        def event_stream():
+            client = openai.OpenAI(api_key=openai.api_key)
+            stream = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[{"role": "user", "content": message}],
+                stream=True
+            )
+            buffer = ""
+            for chunk in stream:
+                if hasattr(chunk.choices[0].delta, 'content'):
+                    content = chunk.choices[0].delta.content
+                    buffer += content
+                    while '.' in buffer:
+                        sentence, buffer = buffer.split('.', 1)
+                        sentence = sentence.strip()
+                        if sentence:
+                            data = json.dumps({"content": sentence + '.'})
+                            yield f'data: {data}\n\n'
+
+            # Flush any remaining content in the buffer as a final sentence
+            if buffer.strip():
+                data = json.dumps({"content": buffer.strip()})
+                yield f'data: {data}\n\n'
+
+            # for chunk in stream:
+            #     if chunk.choices[0].delta.content is not None:
+            #         data = json.dumps({"content": chunk.choices[0].delta.content})
+            #         yield f'data: {data}\n\n'
+
+        response = StreamingHttpResponse(event_stream(), content_type="text/event-stream")
+        response['X-Accel-Buffering'] = 'no'  # Disable buffering in nginx
+        response['Cache-Control'] = 'no-cache'  # Ensure clients don't cache the data
+        return response
