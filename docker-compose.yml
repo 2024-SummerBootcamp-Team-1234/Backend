@@ -6,7 +6,7 @@ services:
     build: ./db
     container_name: mysqldb
     env_file:
-      - "./db/.env"
+      - ./db/.env
     ports:
       - "3306:3306"
 
