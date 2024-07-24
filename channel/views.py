@@ -1,3 +1,5 @@
+import base64
+
 from rest_framework import status
 from django.http import HttpResponse
 import json
@@ -12,11 +14,14 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.http import StreamingHttpResponse
 from dotenv import load_dotenv
+import asyncio
+from asgiref.sync import sync_to_async, async_to_sync
 
 load_dotenv()
 
 # Set OpenAI API key from environment variable
 openai.api_key = os.getenv("OPENAI_API_KEY")
+api_key = os.getenv("OPENAI_API_KEY")
 
 class ChannelCreateView(APIView):
     @swagger_auto_schema(
@@ -106,7 +111,7 @@ class TTSView(APIView):
         if not text:
             return Response({"error": "Text parameter is required"}, status=400)
 
-        audio_data, error = text_to_speach(text)
+        audio_data, error = text_to_speech(text)
 
         if error is None:
             response = HttpResponse(audio_data, content_type='audio/mpeg')
@@ -198,6 +203,7 @@ class SSEAPIView2(APIView):
 
         return Response({"error": "Message not provided"}, status=400)
 
+# ----------------------------------------------------------------------------------------------------------------------------#
 
 class SSEAPIView3(APIView):
 
@@ -226,27 +232,42 @@ class SSEAPIView3(APIView):
             )
             buffer = ""
             for chunk in stream:
-                if hasattr(chunk.choices[0].delta, 'content'):
-                    content = chunk.choices[0].delta.content
+                content = getattr(chunk.choices[0].delta, 'content', None)
+                if content is not None:
                     buffer += content
-                    while '.' in buffer:
+                    data = json.dumps({"content": content})
+                    yield f'data: {data}\n\n'
+
+                    if '.' in buffer:
                         sentence, buffer = buffer.split('.', 1)
                         sentence = sentence.strip()
                         if sentence:
-                            data = json.dumps({"content": sentence + '.'})
-                            yield f'data: {data}\n\n'
+                            # 텍스트를 음성으로 변환
+                            audio_data, error = text_to_speech(sentence + '.')
+                            if audio_data:
+                                audio_base64 = base64.b64encode(audio_data).decode('utf-8')
+                                audio_json = json.dumps({"audio": audio_base64})
+                                yield f'data: {audio_json}\n\n'
+                            elif error:
+                                error_json = json.dumps({"error": f"Error code: {error}"})
+                                yield f'data: {error_json}\n\n'
 
-            # Flush any remaining content in the buffer as a final sentence
+            # 남은 내용을 처리
             if buffer.strip():
                 data = json.dumps({"content": buffer.strip()})
                 yield f'data: {data}\n\n'
 
-            # for chunk in stream:
-            #     if chunk.choices[0].delta.content is not None:
-            #         data = json.dumps({"content": chunk.choices[0].delta.content})
-            #         yield f'data: {data}\n\n'
+                # 남은 텍스트를 음성으로 변환
+                audio_data, error = text_to_speech(buffer.strip())
+                if audio_data:
+                    audio_base64 = base64.b64encode(audio_data).decode('utf-8')
+                    audio_json = json.dumps({"audio": audio_base64})
+                    yield f'data: {audio_json}\n\n'
+                elif error:
+                    error_json = json.dumps({"error": f"Error code: {error}"})
+                    yield f'data: {error_json}\n\n'
 
         response = StreamingHttpResponse(event_stream(), content_type="text/event-stream")
-        response['X-Accel-Buffering'] = 'no'  # Disable buffering in nginx
-        response['Cache-Control'] = 'no-cache'  # Ensure clients don't cache the data
+        response['X-Accel-Buffering'] = 'no'  # Nginx 버퍼링 비활성화
+        response['Cache-Control'] = 'no-cache'  # 클라이언트가 데이터를 캐시하지 않도록 설정
         return response

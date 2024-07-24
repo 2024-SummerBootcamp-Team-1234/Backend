@@ -1,8 +1,10 @@
 import os
 import urllib.request
 from dotenv import load_dotenv
+from celery import shared_task
 
-def text_to_speach(text):
+@shared_task
+def text_to_speech(text):
     load_dotenv()
     client_id = os.getenv("CLOVA_CLIENT_ID")
     client_secret = os.getenv("CLOVA_CLIENT_SECRET")
