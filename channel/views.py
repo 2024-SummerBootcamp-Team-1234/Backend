@@ -12,15 +12,10 @@ from user.utils import *
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST, require_GET
-from langchain.llms import OpenAI
-from langchain.chains import ConversationChain
-from langchain.memory import ConversationBufferMemory
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.http import StreamingHttpResponse
-from collections import defaultdict
 from dotenv import load_dotenv
-from langchain.schema import BaseMessage, HumanMessage, AIMessage
 
 load_dotenv()
 
@@ -187,10 +182,9 @@ openai.api_key = openai_api_key
 def chat_view(request, channel_id):
     try:
         data = json.loads(request.body)
-        message = data.get('message')
+        message_list = data.get('message')
 
-        if not message:
-            return JsonResponse({"error": "Message not provided"}, status=400)
+        message = " ".join(message_list)
 
         # Generate a response stream for the initial query
         response_stream = generate_initial_response_stream(channel_id, message)
@@ -203,14 +197,9 @@ def chat_view(request, channel_id):
 def chat_followup_view(request, channel_id):
     try:
         data = json.loads(request.body)
-        message = data.get('message')
+        message_list = data.get('message')
 
-        if not message:
-            return JsonResponse({"error": "Message not provided"}, status=400)
-
-        memory = get_or_create_memory(channel_id)
-        if not memory.load_memory_variables({})["history"]:
-            return JsonResponse({"error": "No history available for follow-up"}, status=400)
+        message = " ".join(message_list)
 
         # Generate a response stream for the follow-up query
         response_stream = generate_followup_response_stream(channel_id, message)
