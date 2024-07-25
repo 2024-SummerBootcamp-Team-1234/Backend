@@ -1,0 +1,87 @@
+services:
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    volumes:
+      - ./prometheus/config:/etc/prometheus
+      - prometheus-data:/prometheus
+    ports:
+      - 9090:9090
+    command:
+      - '--storage.tsdb.path=/prometheus'
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    restart: always
+    networks:
+      - monitoring-network
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - 3001:3000
+    environment:
+      GF_INSTALL_PLUGINS: "grafana-clock-panel,grafana-simple-json-datasource"
+      GF_AUTH_ANONYMOUS_ENABLED: 'true'
+      GF_AUTH_ANONYMOUS_ORG_ROLE: 'Admin'
+      GF_AUTH_DISABLE_LOGIN_FORM: 'true'
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+    restart: always
+    depends_on:
+      - prometheus
+      - node_exporter
+    networks:
+      - monitoring-network
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor
+
+    container_name: cadvisor
+    ports:
+      - 8080:8080
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    networks:
+      - monitoring-network
+
+  node_exporter:
+    image: prom/node-exporter
+    volumes:
+        - /proc:/host/proc:ro
+        - /sys:/host/sys:ro
+        - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    ports:
+      - "9100:9100"
+    networks:
+      - monitoring-network
+
+  pushgateway:
+    image: prom/pushgateway:v1.2.0
+    container_name: pushgateway
+    restart: unless-stopped
+    ports:
+      - "9091:9091"
+    networks:
+      - monitoring-network
+    labels:
+      org.label-schema.group: "monitoring"
+
+
+networks:
+  monitoring-network:
+    driver: bridge
+
+volumes:
+  grafana-data:
+  prometheus-data:

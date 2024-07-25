@@ -4,12 +4,19 @@ import json
 from .serializers import *
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+import openai as openai
 from user.utils import *
 from .utils import *
 import time
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.http import StreamingHttpResponse
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Set OpenAI API key from environment variable
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 class ChannelCreateView(APIView):
     @swagger_auto_schema(
@@ -114,14 +121,6 @@ class TTSView(APIView):
 
 # 가상으로 설정한 메시지
 virtual_message = ("Hello, this is a virtual message."
-                   "Hello, this is a virtual message."
-                   "Hello, this is a virtual message."
-                   "Hello, this is a virtual message."
-                   "Hello, this is a virtual message."
-                   "Hello, this is a virtual message."
-                   "Hello, this is a virtual message."
-                   "Hello, this is a virtual message."
-                   "Hello, this is a virtual message."
                    "Hello, this is a virtual message.")
 
 class SSEAPIView(APIView):
@@ -144,10 +143,110 @@ class SSEAPIView(APIView):
         message_text = request.data.get('message')
         if message_text is not None:
             def event_stream():
+                word = ""
                 for char in virtual_message:
-                    yield f"data: {char}\n\n"
-                    time.sleep(0.25)  # 1초 간격으로 문자 전송
+                    if char.isspace() or char in (".", ",", "!", "?"):  # 단어 구분자
+                        if word:
+                            data = json.dumps({"content": word})
+                            yield f"data: {data}\n\n"
+                            time.sleep(0.25)  # 0.25초 간격으로 단어 전송
+                            word = ""
+                        if char.isspace():
+                            continue
+                        else:
+                            data = json.dumps({"content": char})
+                            yield f"data: {data}\n\n"
+                            time.sleep(0.25)  # 0.25초 간격으로 구두점 전송
+                    else:
+                        word += char
 
-            return StreamingHttpResponse(event_stream(), content_type='text/event-stream')
+                if word:  # 마지막 단어 처리
+                    data = json.dumps({"content": word})
+                    yield f"data: {data}\n\n"
+
+            # StreamingHttpResponse를 사용하여 스트림 응답 반환
+            # return StreamingHttpResponse(event_stream(), content_type="text/event-stream")
+            response = StreamingHttpResponse(event_stream(), content_type="text/event-stream")
+            response['X-Accel-Buffering'] = 'no'  # Disable buffering in nginx
+            response['Cache-Control'] = 'no-cache'  # Ensure clients don't cache the data
+            response['Content-Language'] = request.headers.get('Accept-Language', 'en')
+            return response
 
         return Response({"error": "Message not provided"}, status=400)
+
+class SSEAPIView2(APIView):
+
+    @swagger_auto_schema(
+        tags=['채널'],
+        manual_parameters=[
+            openapi.Parameter('channel_id', openapi.IN_QUERY, description="Channel ID", type=openapi.TYPE_INTEGER)
+        ],
+    )
+    def get(self, request, channel_id):
+        # 요청 본문에서 message를 받는 형식만 유지
+        message_text = request.data.get('message')
+        if message_text is not None:
+            def event_stream():
+                for char in virtual_message:
+                    # 각 문자를 JSON 형식으로 감쌈
+                    data = json.dumps({"content": char})
+                    yield f"data: {data}\n\n"
+                    time.sleep(0.25)  # 0.25초 간격으로 문자 전송
+
+            # StreamingHttpResponse를 사용하여 스트림 응답 반환
+            return StreamingHttpResponse(event_stream(), content_type="text/event-stream")
+
+        return Response({"error": "Message not provided"}, status=400)
+
+
+class SSEAPIView3(APIView):
+
+    @swagger_auto_schema(
+        tags=['채널'],
+        manual_parameters=[
+            openapi.Parameter('channel_id', openapi.IN_QUERY, description="Channel ID", type=openapi.TYPE_INTEGER)
+        ],
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'message': openapi.Schema(type=openapi.TYPE_STRING, description='Message to send')
+            },
+            required=['message']
+        )
+    )
+    def post(self, request, channel_id):
+        message = request.data.get('message', '')
+
+        def event_stream():
+            client = openai.OpenAI(api_key=openai.api_key)
+            stream = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[{"role": "user", "content": message}],
+                stream=True
+            )
+            buffer = ""
+            for chunk in stream:
+                if hasattr(chunk.choices[0].delta, 'content'):
+                    content = chunk.choices[0].delta.content
+                    buffer += content
+                    while '.' in buffer:
+                        sentence, buffer = buffer.split('.', 1)
+                        sentence = sentence.strip()
+                        if sentence:
+                            data = json.dumps({"content": sentence + '.'})
+                            yield f'data: {data}\n\n'
+
+            # Flush any remaining content in the buffer as a final sentence
+            if buffer.strip():
+                data = json.dumps({"content": buffer.strip()})
+                yield f'data: {data}\n\n'
+
+            # for chunk in stream:
+            #     if chunk.choices[0].delta.content is not None:
+            #         data = json.dumps({"content": chunk.choices[0].delta.content})
+            #         yield f'data: {data}\n\n'
+
+        response = StreamingHttpResponse(event_stream(), content_type="text/event-stream")
+        response['X-Accel-Buffering'] = 'no'  # Disable buffering in nginx
+        response['Cache-Control'] = 'no-cache'  # Ensure clients don't cache the data
+        return response

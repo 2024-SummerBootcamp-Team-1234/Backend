@@ -145,9 +145,9 @@ class UserIDFromTokenView(APIView):
         tags=['Test']
     )
     def get(self, request):
-        user_id, error = get_user_id_from_token(request)
-        if error:
-            return Response(error, status=error["status"])
+        user_id, error_response = get_user_id_from_token(request)
+        if error_response:
+            return error_response
         return Response({"user_id": user_id}, status=status.HTTP_200_OK)
 
 class UserFromTokenView(APIView):
@@ -155,7 +155,7 @@ class UserFromTokenView(APIView):
         tags=['Test']
     )
     def get(self, request):
-        user_data = get_user_from_token(request)
-        if "status" in user_data:
-            return Response(user_data, status=user_data["status"])
-        return Response(user_data, status=status.HTTP_200_OK)
+        user_data_response = get_user_from_token(request)
+        if isinstance(user_data_response, Response):  # user_data_response가 Response 객체인지 확인
+            return user_data_response  # Response 객체이므로 직접 반환
+        return Response(user_data_response, status=status.HTTP_200_OK)
