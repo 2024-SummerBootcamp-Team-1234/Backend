@@ -2,8 +2,6 @@ import urllib.request
 import openai
 import json
 import logging
-from langchain.chains import LLMChain
-from langchain.llms import OpenAI
 from langchain.memory import ConversationBufferMemory
 from langchain.prompts import PromptTemplate
 from langchain_community.vectorstores import OpenSearchVectorSearch
@@ -142,14 +140,12 @@ def stream_gpt_response(prompt):
     stream = client.chat.completions.create(
         model="gpt-3.5-turbo",
         # model="gpt-4o",
-        messages=[{"role": "user", "content": prompt}],
+        messages=[{"role": "assistant", "content": prompt}],
         stream=True,
     )
     for chunk in stream:
         if chunk.choices[0].delta.content is not None:
             yield chunk.choices[0].delta.content
-#--------------------------------------------------------------------------------------------------------------#
-
 
 def generate_initial_response_stream(channel_id, message):
     memory = get_or_create_memory(channel_id)
@@ -168,26 +164,8 @@ def generate_initial_response_stream(channel_id, message):
         full_response += chunk
         yield f"data: {chunk}\n\n"
 
+    logger.info(full_response)
     memory.save_context({"input": message}, {"output": full_response})
-    logger.info(f"Final response: {full_response}")
-
-
-prompt_template_summary = PromptTemplate(
-    input_variables=["context", "question"],
-    template=Prompts.PROMPT_SUMMARY
-)
-
-prompt_template_final = PromptTemplate(
-    input_variables=["context", "question"],
-    template=Prompts.PROMPT_FINAL
-)
-
-llm = OpenAI(model_name="gpt-3.5-turbo", openai_api_key=openai.api_key)
-
-llm_chain_summary = LLMChain(llm=llm, prompt=prompt_template_summary)
-llm_chain_final = LLMChain(llm=llm, prompt=prompt_template_final)
-
-
 
 def generate_followup_response_stream(channel_id, message):
     memory = get_or_create_memory(channel_id)
@@ -197,12 +175,18 @@ def generate_followup_response_stream(channel_id, message):
     if not history:
         search_results = get_similar_docs(message)
         context = " ".join([doc.page_content for doc in search_results])
-        prompt = prompt_template_summary.format(context=context, question=message)
+        prompt = PromptTemplate(
+            input_variables=["context", "question"],
+            template=Prompts.PROMPT_SUMMARY
+        ).format(context=context, question=message)
     else:
         full_context = " ".join([entry["output"] for entry in history if isinstance(entry, dict)]) + " " + message
         search_results = get_similar_docs(full_context)
         context = " ".join([doc.page_content for doc in search_results])
-        prompt = prompt_template_final.format(context=context, question=message)
+        prompt = PromptTemplate(
+            input_variables=["context", "question"],
+            template=Prompts.PROMPT_FINAL
+        ).format(context=context, question=message)
 
     response_stream = stream_gpt_response(prompt)
     full_response = ''
@@ -210,5 +194,5 @@ def generate_followup_response_stream(channel_id, message):
         full_response += chunk
         yield f"data: {chunk}\n\n"
 
+    logger.info(full_response)
     memory.save_context({"input": message}, {"output": full_response})
-    logger.info(f"Response: {full_response}")
