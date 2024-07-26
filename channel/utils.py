@@ -12,6 +12,7 @@ from celery import shared_task
 import os
 from . import Prompts
 import copy
+import base64
 
 
 logging.basicConfig(level=logging.INFO)
@@ -162,9 +163,27 @@ def generate_initial_response_stream(channel_id, message):
 
     response_stream = stream_gpt_response(prompt)
     full_response = ''
+    buffer = ""
+
     for chunk in response_stream:
         full_response += chunk
-        yield f"data: {json.dumps(chunk)}\n\n"
+        buffer += chunk
+
+        data = json.dumps({"type": "text", "content": chunk})
+        yield f"data: {data}\n\n"
+
+        if '.' in buffer:
+            sentence, buffer = buffer.split('.', 1)
+            sentence = sentence.strip()
+            if sentence:
+                audio_data, error = text_to_speech(sentence + '.')
+                if audio_data:
+                    audio_base64 = base64.b64encode(audio_data).decode('utf-8')
+                    audio_json = json.dumps({"type": "audio", "audio": audio_base64})
+                    yield f"data: {audio_json}\n\n"
+                elif error:
+                    error_json = json.dumps({"type": "error", "error": f"Error code: {error}"})
+                    yield f"data: {error_json}\n\n"
 
     logger.info(full_response)
     memory.save_context({"input": message}, {"output": full_response})
@@ -193,9 +212,27 @@ def generate_followup_response_stream(channel_id, message):
 
     response_stream = stream_gpt_response(prompt)
     full_response = ''
+    buffer = ""
+
     for chunk in response_stream:
         full_response += chunk
-        yield f"data: {json.dumps(chunk)}\n\n"
+        buffer += chunk
+
+        data = json.dumps({"type": "text", "content": chunk})
+        yield f"data: {data}\n\n"
+
+        if '.' in buffer:
+            sentence, buffer = buffer.split('.', 1)
+            sentence = sentence.strip()
+            if sentence:
+                audio_data, error = text_to_speech(sentence + '.')
+                if audio_data:
+                    audio_base64 = base64.b64encode(audio_data).decode('utf-8')
+                    audio_json = json.dumps({"type": "audio", "audio": audio_base64})
+                    yield f"data: {audio_json}\n\n"
+                elif error:
+                    error_json = json.dumps({"type": "error", "error": f"Error code: {error}"})
+                    yield f"data: {error_json}\n\n"
 
     logger.info(full_response)
     memory.save_context({"input": message}, {"output": full_response})
