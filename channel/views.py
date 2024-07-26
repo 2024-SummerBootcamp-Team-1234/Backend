@@ -203,7 +203,6 @@ def chat_followup_view(request, channel_id):
 
         # Generate a response stream for the follow-up query
         response_stream = generate_followup_response_stream(channel_id, message)
-        print(response_stream)
         return StreamingHttpResponse(response_stream, content_type="text/event-stream")
     except json.JSONDecodeError:
         return JsonResponse({"error": "Invalid JSON"}, status=400)

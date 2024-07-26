@@ -162,7 +162,7 @@ def generate_initial_response_stream(channel_id, message):
     full_response = ''
     for chunk in response_stream:
         full_response += chunk
-        yield f"data: {chunk}\n\n"
+        yield f"data: {json.dumps(chunk)}\n\n"
 
     logger.info(full_response)
     memory.save_context({"input": message}, {"output": full_response})
@@ -181,18 +181,19 @@ def generate_followup_response_stream(channel_id, message):
         ).format(context=context, question=message)
     else:
         full_context = " ".join([entry["output"] for entry in history if isinstance(entry, dict)]) + " " + message
+        full_message = " ".join([entry["input"] for entry in history if isinstance(entry, dict)]) + " " + message
         search_results = get_similar_docs(full_context)
         context = " ".join([doc.page_content for doc in search_results])
         prompt = PromptTemplate(
             input_variables=["context", "question"],
             template=Prompts.PROMPT_FINAL
-        ).format(context=context, question=message)
+        ).format(context=context, question=full_message)
 
     response_stream = stream_gpt_response(prompt)
     full_response = ''
     for chunk in response_stream:
         full_response += chunk
-        yield f"data: {chunk}\n\n"
+        yield f"data: {json.dumps(chunk)}\n\n"
 
     logger.info(full_response)
     memory.save_context({"input": message}, {"output": full_response})
