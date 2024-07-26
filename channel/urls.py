@@ -8,4 +8,5 @@ urlpatterns = [
     path('tts', TTSView.as_view(), name='tts'), # 테스트 url
     path('virtual_messages/<int:channel_id>',SSEAPIView.as_view(), name='virtual_message'),
     path('virtual_messages2/<int:channel_id>',SSEAPIView2.as_view(), name='virtual_message'),
+    path('virtual_messages3/<int:channel_id>',SSEAPIView3.as_view(), name='virtual_message'),
 ]
