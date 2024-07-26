@@ -10,6 +10,10 @@ import openai as openai
 from user.utils import *
 from .utils import *
 import time
+from user.utils import *
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST, require_GET
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.http import StreamingHttpResponse
@@ -23,82 +27,6 @@ load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 api_key = os.getenv("OPENAI_API_KEY")
 
-class ChannelCreateView(APIView):
-    @swagger_auto_schema(
-        tags=['채널'],
-        responses={201: ChannelSerializer, 400: 'Bad Request'}
-    )
-    # 채널 생성
-    def post(self, request):
-        user_id, error_response = get_user_id_from_token(request)
-        if error_response:
-            return error_response
-
-        try:
-            user = User.objects.get(id=user_id)
-            channel = Channel.objects.create(user=user)
-            channel_serializer = ChannelCreateSerializer(channel)
-            return Response(channel_serializer.data, status=status.HTTP_201_CREATED)
-        except User.DoesNotExist:
-            return Response({'error': '사용자를 찾을 수 없습니다.'}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-# -----------------------------------------------------------------------------------#
-
-class SendMessageView(APIView):
-    @swagger_auto_schema(
-        tags=['채널'],
-        request_body=ChannelSerializer,  # Assuming you want to use the same serializer
-    )
-    # 메시지 전송
-    def post(self, request, channel_id):
-        try:
-            data = json.loads(request.body)
-            message = data.get('message')
-
-            if not channel_id:
-                return Response({'error': 'Channel ID is required'}, status=status.HTTP_400_BAD_REQUEST)
-            if message is None:
-                return Response({'error': 'Message is required'}, status=status.HTTP_400_BAD_REQUEST)
-
-            channel = Channel.objects.get(id=channel_id)
-            channel.message = message
-            channel.save()
-
-            # Response에 RAG를 통한 응답을 포함 + channel.message에 응답 내용 추가
-
-            return Response({'message': '메시지가 성공적으로 전송되었습니다.'}, status=status.HTTP_201_CREATED)
-        except Channel.DoesNotExist:
-            return Response({'error': '채널을 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-# ----------------------------------------------------------------------------------------------------------------------------#
-
-class ChannelResultsView(APIView):
-    @swagger_auto_schema(
-        tags=['채널'],
-        manual_parameters=[
-            openapi.Parameter('channel_id', openapi.IN_QUERY, description="Channel ID",
-                              type=openapi.TYPE_INTEGER)
-        ]
-    )
-    # 결과 확인
-    def get(self, request):
-        channel_id = request.GET.get('channel_id')
-        try:
-            channel = Channel.objects.get(id=channel_id)
-            serializer = ChannelSerializer(channel)
-
-            # Response에 RAG를 통한 결과를 포함 + channel.result에 결과 내용 추가
-
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except Channel.DoesNotExist:
-            return Response({'error': '채널을 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
-
-# ----------------------------------------------------------------------------------------------------------------------------#
-# tts 테스트 코드
 class TTSView(APIView):
     @swagger_auto_schema(
         tags=['Test'],
@@ -120,10 +48,28 @@ class TTSView(APIView):
         else:
             return Response({"error": f"Error Code: {error}"}, status=500)
 
+class ChannelCreateView(APIView):
+    @swagger_auto_schema(
+        tags=['채널'],
+        responses={201: ChannelCreateSerializer, 400: 'Bad Request'}
+    )
+    # 채널 생성
+    def post(self, request):
+        user_id, error_response = get_user_id_from_token(request)
+        if error_response:
+            return error_response
 
+        try:
+            user = User.objects.get(id=user_id)
+            channel = Channel.objects.create(user=user)
+            channel_serializer = ChannelCreateSerializer(channel)
+            return Response(channel_serializer.data, status=status.HTTP_201_CREATED)
+        except User.DoesNotExist:
+            return Response({'error': '사용자를 찾을 수 없습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-
-
+# -----------------------------------------------------------------------------------#
 # 가상으로 설정한 메시지
 virtual_message = ("Hello, this is a virtual message."
                    "Hello, this is a virtual message.")
@@ -178,6 +124,7 @@ class SSEAPIView(APIView):
             return response
 
         return Response({"error": "Message not provided"}, status=400)
+
 
 class SSEAPIView2(APIView):
 
@@ -271,3 +218,37 @@ class SSEAPIView3(APIView):
         response['X-Accel-Buffering'] = 'no'  # Nginx 버퍼링 비활성화
         response['Cache-Control'] = 'no-cache'  # 클라이언트가 데이터를 캐시하지 않도록 설정
         return response
+
+#######################################################################################################################
+load_dotenv()
+openai_api_key = os.getenv('OPENAI_API_KEY')
+openai.api_key = openai_api_key
+@csrf_exempt
+@require_POST
+def chat_view(request, channel_id):
+    try:
+        data = json.loads(request.body)
+        message_list = data.get('message')
+
+        message = " ".join(message_list)
+
+        # Generate a response stream for the initial query
+        response_stream = generate_initial_response_stream(channel_id, message)
+        return StreamingHttpResponse(response_stream, content_type="text/event-stream")
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+@csrf_exempt
+@require_POST
+def chat_followup_view(request, channel_id):
+    try:
+        data = json.loads(request.body)
+        message_list = data.get('message')
+
+        message = " ".join(message_list)
+
+        # Generate a response stream for the follow-up query
+        response_stream = generate_followup_response_stream(channel_id, message)
+        return StreamingHttpResponse(response_stream, content_type="text/event-stream")
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
