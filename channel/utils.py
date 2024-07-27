@@ -8,7 +8,6 @@ from langchain_community.vectorstores import OpenSearchVectorSearch
 from langchain_huggingface import HuggingFaceEmbeddings
 from opensearchpy import OpenSearch
 from dotenv import load_dotenv
-from celery import shared_task
 import os
 from . import Prompts
 import copy
@@ -20,7 +19,6 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 #--------------------------------------------------------------------------------------------------------------#
-@shared_task
 def text_to_speech(text):
     client_id = os.getenv("CLOVA_CLIENT_ID")
     client_secret = os.getenv("CLOVA_CLIENT_SECRET")

@@ -18,8 +18,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.http import StreamingHttpResponse
 from dotenv import load_dotenv
-import asyncio
-from asgiref.sync import sync_to_async, async_to_sync
+
 
 load_dotenv()
 
