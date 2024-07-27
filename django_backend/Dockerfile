@@ -9,5 +9,3 @@ RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 # 소스 코드 복사
 COPY . ./django_backend
-
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "django_backend.wsgi:application"]

@@ -26,7 +26,7 @@ services:
       bash -c "python wait_mysql.py &&
       python manage.py makemigrations &&
       python manage.py migrate &&
-      gunicorn --bind 0.0.0.0:8000 django_backend.wsgi:application"
+      python manage.py runserver 0.0.0.0:8000"
   
 
 #  rabbitmq:
@@ -47,7 +47,7 @@ services:
 #    tty: true   # restart: unless-stopped??
 #    expose:
 #      - 5672
-#
+
 #  celery_worker:
 #    container_name: celery_worker
 #    volumes:
