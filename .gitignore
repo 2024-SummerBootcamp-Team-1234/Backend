@@ -13,7 +13,5 @@ post/migrations/*
 django_backend/__pycache__/*
 testapp/__pycache__/
 .DS_Store
-judgment/__pycache__/*
 channel/.env
-judgment/migrations/*
 celerybeat-schedule
