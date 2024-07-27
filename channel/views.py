@@ -41,9 +41,8 @@ class TTSView(APIView):
         audio_data, error = text_to_speech(text)
 
         if error is None:
-            response = HttpResponse(audio_data, content_type='audio/mpeg')
-            response['Content-Disposition'] = 'attachment; filename="tts.mp3"'
-            return response
+            encoded_audio = base64.b64encode(audio_data).decode('utf-8')
+            return JsonResponse({"audio_data": encoded_audio})
         else:
             return Response({"error": f"Error Code: {error}"}, status=500)
 
