@@ -37,8 +37,6 @@ JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
-
 # Application definition
 INSTALLED_APPS = [
     'corsheaders',
@@ -48,12 +46,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django_celery_beat',
+    # 'django_celery_beat',
     'rest_framework',
     'rest_framework_simplejwt',
     'drf_yasg',
     'testapp',
-    'judgment',
     'user',
     'channel',
     'post',
@@ -149,7 +146,41 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CORS_ORIGIN_ALLOW_ALL = True
+
+CORS_ORIGIN_WHITELIST = ['http://127.0.0.1:5173', 'http://localhost:5173', 'http://0.0.0.0:5173',
+                         'http://127.0.0.1:5174', 'http://localhost:5174', 'http://0.0.0.0:5174',
+                         'http://127.0.0.1:8000', 'http://localhost:8000', 'http://0.0.0.0:8000',
+                         'http://localhost', 'http://0.0.0.0', 'http://127.0.0.1',
+                         'https://solo-mon.site']
+
+ALLOWED_HOSTS = ["backend",
+                 "localhost",
+                 "solo-mon.site",
+                 "0.0.0.0"
+                 ]
+
+CORS_ALLOW_CREDENTIALS = True # <-쿠키가 cross-site HTTP 요청에 포함될 수 있다
+
+CORS_ALLOW_METHODS = (  #<-실제 요청에 허용되는 HTTP 동사 리스트
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+)
+
+CORS_ALLOW_HEADERS = (  # <- 실제 요청을 할 때 사용될 수 있는 non-standard HTTP 헤더 목록, 현재 기본값
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+)
 
 AUTH_USER_MODEL = 'user.User'
 
@@ -205,19 +236,19 @@ SWAGGER_SETTINGS = {
     },
 }
 
-CELERY_BROKER_URL = 'amqp://guest:guest@rabbitmq:5672/'
-CELERY_ACCEPT_CONTENT = ['application/json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = 'Asia/Seoul'
-CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
-# Celery task를 종료 가능하게 해주는 세팅 (굉장히 중요)
-CELERY_TASK_REVOKE = True
-
-CELERYD_HIJACK_ROOT_LOGGER = False
-CELERYD_REDIRECT_STDOUTS = False
-
-CELERY_FLOWER_USER = 'root'  # Flower 웹 인터페이스 사용자 이름
-CELERY_FLOWER_PASSWORD = 'root'  # Flower 웹 인터페이스 비밀번호
-
-CELERY_RESULT_BACKEND = 'rpc://'
+# CELERY_BROKER_URL = 'amqp://guest:guest@rabbitmq:5672/'
+# CELERY_ACCEPT_CONTENT = ['application/json']
+# CELERY_TASK_SERIALIZER = 'json'
+# CELERY_RESULT_SERIALIZER = 'json'
+# CELERY_TIMEZONE = 'Asia/Seoul'
+# CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+# # Celery task를 종료 가능하게 해주는 세팅 (굉장히 중요)
+# CELERY_TASK_REVOKE = True
+#
+# CELERYD_HIJACK_ROOT_LOGGER = False
+# CELERYD_REDIRECT_STDOUTS = False
+#
+# CELERY_FLOWER_USER = 'root'  # Flower 웹 인터페이스 사용자 이름
+# CELERY_FLOWER_PASSWORD = 'root'  # Flower 웹 인터페이스 비밀번호
+#
+# CELERY_RESULT_BACKEND = 'rpc://'
