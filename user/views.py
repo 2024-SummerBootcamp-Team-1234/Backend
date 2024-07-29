@@ -20,7 +20,7 @@ class RegisterAPIView(APIView):
             201: RegisterSerializer,
             400: 'Bad Request'
         },
-        tags=['User'],
+        tags=['user'],
         operation_description="Register a new user by providing an ID, name, and password."
     )
     #회원가입
@@ -88,7 +88,7 @@ class AuthLoginView(APIView):
 
     @swagger_auto_schema(
         request_body=LoginSerializer,
-        tags=['User'],
+        tags=['user'],
         operation_description="Login user by providing ID and password, returns JWT tokens."
     )
     # 로그인
@@ -125,7 +125,7 @@ class AuthLogoutView(APIView):
         responses={
             202: 'Logout success'
         },
-        tags=['User'],
+        tags=['user'],
         operation_description="Logout user by deleting the JWT tokens in cookies."
     )
     # 로그아웃

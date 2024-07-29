@@ -10,7 +10,7 @@ from user.utils import *
 
 class PostCreateView(APIView):
     @swagger_auto_schema(
-        tags=['게시판'],
+        tags=['post'],
         request_body=PostCreateSerializer,
         responses={201: PostSerializer, 400: 'Bad Request'}
     )
@@ -36,7 +36,7 @@ class PostCreateView(APIView):
 
 class PostUpdateView(APIView):
     @swagger_auto_schema(
-        tags=['게시판'],
+        tags=['post'],
         request_body=PostUpdateSerializer,
     )
     #게시글 수정
@@ -64,7 +64,7 @@ class PostUpdateView(APIView):
 # ----------------------------------------------------------------------------------------------------------------------------#
 class PostDeleteView(APIView):
     @swagger_auto_schema(
-        tags=['게시판']
+        tags=['post']
     )
     # 게시글 삭제
     def delete(self, request, post_id):
@@ -91,7 +91,7 @@ class PostDeleteView(APIView):
 
 class PostVoteView(APIView):
     @swagger_auto_schema(
-        tags=['게시판']
+        tags=['post']
     )
     # 게시글 추천
     def patch(self, request, post_id):
@@ -142,7 +142,7 @@ class AllPostGetView(APIView):
             200: PostSerializer,
             400: 'Bad Request'
         },
-        tags=['게시판 목록'],
+        tags=['post list'],
     )
     def get(self, request):
         posts = Post.undeleted_objects.all()
@@ -161,7 +161,7 @@ class UserPostsGetView(APIView):
             200: PostSerializer,
             405: 'Not found'
         },
-        tags=['게시판 목록'],
+        tags=['post list'],
     )
     def get(self, request):
         user_id, error_response = get_user_id_from_token(request)

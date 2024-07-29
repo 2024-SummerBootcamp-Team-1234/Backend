@@ -28,7 +28,7 @@ api_key = os.getenv("OPENAI_API_KEY")
 
 class TTSView(APIView):
     @swagger_auto_schema(
-        tags=['Test'],
+        tags=['channel'],
         manual_parameters=[
             openapi.Parameter('text', openapi.IN_QUERY, description="Text to convert to speech", type=openapi.TYPE_STRING, required=True)
         ]
@@ -48,7 +48,7 @@ class TTSView(APIView):
 
 class ChannelCreateView(APIView):
     @swagger_auto_schema(
-        tags=['채널'],
+        tags=['channel'],
         responses={201: ChannelCreateSerializer, 400: 'Bad Request'}
     )
     # 채널 생성
@@ -75,7 +75,7 @@ virtual_message = ("Hello, this is a virtual message."
 class SSEAPIView(APIView):
 
     @swagger_auto_schema(
-        tags=['채널'],
+        tags=['channel'],
         manual_parameters=[
             openapi.Parameter('channel_id', openapi.IN_QUERY, description="Channel ID", type=openapi.TYPE_INTEGER)
         ],
@@ -127,7 +127,7 @@ class SSEAPIView(APIView):
 class SSEAPIView2(APIView):
 
     @swagger_auto_schema(
-        tags=['채널'],
+        tags=['channel'],
         manual_parameters=[
             openapi.Parameter('channel_id', openapi.IN_QUERY, description="Channel ID", type=openapi.TYPE_INTEGER)
         ],
@@ -153,7 +153,7 @@ class SSEAPIView2(APIView):
 class SSEAPIView3(APIView):
 
     @swagger_auto_schema(
-        tags=['채널'],
+        tags=['channel'],
         manual_parameters=[
             openapi.Parameter('channel_id', openapi.IN_QUERY, description="Channel ID", type=openapi.TYPE_INTEGER)
         ],
