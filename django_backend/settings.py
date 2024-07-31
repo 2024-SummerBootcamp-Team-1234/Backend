@@ -140,6 +140,8 @@ STATIC_URL = 'static/'
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
+CORS_ORIGIN_ALLOW_ALL = True
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
@@ -154,6 +156,13 @@ ALLOWED_HOSTS = ["backend",
                  "solo-mon.site",
                  "0.0.0.0"
                  ]
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://solo-mon.site',
+    'http://localhost:8000',
+    'http://localhost',
+    'http://127.0.0.1',
+]
 
 CORS_ALLOW_CREDENTIALS = True # <-쿠키가 cross-site HTTP 요청에 포함될 수 있다
 
