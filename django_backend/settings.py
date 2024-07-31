@@ -155,6 +155,13 @@ ALLOWED_HOSTS = ["backend",
                  "0.0.0.0"
                  ]
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://solo-mon.site',
+    'http://localhost:8000',
+    'http://localhost',
+    'http://127.0.0.1',
+]
+
 CORS_ALLOW_CREDENTIALS = True # <-쿠키가 cross-site HTTP 요청에 포함될 수 있다
 
 CORS_ALLOW_METHODS = (  #<-실제 요청에 허용되는 HTTP 동사 리스트
