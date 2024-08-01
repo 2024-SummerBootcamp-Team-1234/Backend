@@ -232,7 +232,10 @@ def chat_view(request, channel_id):
 
         # Generate a response stream for the initial query
         response_stream = generate_initial_response_stream(channel_id, message)
-        return StreamingHttpResponse(response_stream, content_type="text/event-stream")
+        response = StreamingHttpResponse(response_stream, content_type="text/event-stream")
+        response['X-Accel-Buffering'] = 'no'  # Nginx 버퍼링 비활성화
+        response['Cache-Control'] = 'no-cache'  # 클라이언트가 데이터를 캐시하지 않도록 설정
+        return response
     except json.JSONDecodeError:
         return JsonResponse({"error": "Invalid JSON"}, status=400)
 
@@ -247,6 +250,9 @@ def chat_followup_view(request, channel_id):
 
         # Generate a response stream for the follow-up query
         response_stream = generate_followup_response_stream(channel_id, message)
-        return StreamingHttpResponse(response_stream, content_type="text/event-stream")
+        response = StreamingHttpResponse(response_stream, content_type="text/event-stream")
+        response['X-Accel-Buffering'] = 'no'  # Nginx 버퍼링 비활성화
+        response['Cache-Control'] = 'no-cache'  # 클라이언트가 데이터를 캐시하지 않도록 설정
+        return response
     except json.JSONDecodeError:
         return JsonResponse({"error": "Invalid JSON"}, status=400)
